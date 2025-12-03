@@ -17,7 +17,9 @@ export default function LeaderboardTable() {
     // Limit items per page
     const itemsPerPage = 10;
     // Search state
+    // for submission
     const [searchTerm, setSearchTerm] = useState('');
+    // for input field onChange
     const [inputValue, setInputValue] = useState('');
 
     useEffect(() => {

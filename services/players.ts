@@ -2,6 +2,9 @@ import { Player } from "@/types/player";
 import { playersCollection } from "@/utils/firebase.client";
 import { DocumentData, Query, getDocs } from "firebase/firestore";
 
+// TODO: refactor pagination and search functionality to backend for efficiency
+// TODO: Real-time updates of leaderboard
+
 export async function getPlayers(mode?: 'disinformer' | 'netizen', query?: Query): Promise<Player[]> {
     try {
         const querySnapshot = await getDocs(query ?? playersCollection);
