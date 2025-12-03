@@ -14,18 +14,18 @@ export async function getPlayers(mode?: 'disinformer' | 'netizen', query?: Query
             return {
                 ...data,
                 // default to 0 if points are undefined
-                disinformerPoints: data.disinformerPoints ?? 0,
+                totalDisinformerPoints: data.totalDisinformerPoints ?? 0,
                 // default to 0 if points are undefined
-                netizenPoints: data.netizenPoints ?? 0,
+                totalNetizenPoints: data.totalNetizenPoints ?? 0,
                 id: doc.id,
             };
         }) as Player[];
 
         // Sort based on mode
         if (mode === 'disinformer') {
-            localPlayers.sort((a, b) => b.disinformerPoints - a.disinformerPoints); // Descending
+            localPlayers.sort((a, b) => b.totalDisinformerPoints - a.totalDisinformerPoints); // Descending
         } else if (mode === 'netizen') {
-            localPlayers.sort((a, b) => b.netizenPoints - a.netizenPoints); // Descending
+            localPlayers.sort((a, b) => b.totalNetizenPoints - a.totalNetizenPoints); // Descending
         }
         // If no mode, return unsorted
 

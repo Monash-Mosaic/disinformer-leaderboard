@@ -51,7 +51,7 @@ export default function LeaderboardTable() {
     const title = mode === 'disinformer' ? 'Disinformer Leaderboard' : 'Netizen Leaderboard';
 
     // Filter players based on search term
-    const filteredPlayers = players.filter(player => 
+    const filteredPlayers = players.filter(player =>
         player.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -120,7 +120,7 @@ export default function LeaderboardTable() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-zinc-900 dark:text-white font-semibold">
-                                                {mode === 'disinformer' ? player.disinformerPoints : player.netizenPoints}
+                                                {mode === 'disinformer' ? player.totalDisinformerPoints : player.totalNetizenPoints}
                                             </td>
                                             <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
                                                 {player.society || "N/A"}

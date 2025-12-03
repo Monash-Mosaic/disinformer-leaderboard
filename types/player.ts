@@ -1,9 +1,10 @@
 export interface Player {
-    //   id: string;
-    // Dont need id since username is unique
+    // keep id as backup for unique identification incase username not unique
+    id: string;
     username: string;
-    disinformerPoints: number;
-    netizenPoints: number;
+    totalGamesPlayed: number;
+    totalDisinformerPoints: number;
+    totalNetizenPoints: number;
     society: String;
     branch: String;
 }
