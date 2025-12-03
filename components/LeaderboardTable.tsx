@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { getPlayers } from "@/services/players";
 import { Player } from "@/types/player";
+import SearchBar from "./SearchBar";
+import Pagination from "./Pagination";
 
 export default function LeaderboardTable() {
     const [players, setPlayers] = useState<Player[]>([]);
@@ -14,6 +16,9 @@ export default function LeaderboardTable() {
     const [currentPage, setCurrentPage] = useState(1);
     // Limit items per page
     const itemsPerPage = 10;
+    // Search state
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
 
     useEffect(() => {
         const fetchPlayers = async () => {
@@ -32,6 +37,11 @@ export default function LeaderboardTable() {
         fetchPlayers();
     }, [mode]); // Re-fetch when mode changes
 
+    // Reset page when search term changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
     if (loading) return <p>Loading leaderboard...</p>;
     if (error) return <p>Error: {error}</p>;
 
@@ -39,8 +49,13 @@ export default function LeaderboardTable() {
     const buttonText = mode === 'disinformer' ? 'Switch to Netizen Mode' : 'Switch to Disinformer Mode';
     const title = mode === 'disinformer' ? 'Disinformer Leaderboard' : 'Netizen Leaderboard';
 
-    const totalPages = Math.ceil(players.length / itemsPerPage);
-    const paginatedPlayers = players.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // Filter players based on search term
+    const filteredPlayers = players.filter(player => 
+        player.username.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage);
+    const paginatedPlayers = filteredPlayers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handlePrev = () => setCurrentPage(prev => Math.max(prev - 1, 1));
     const handleNext = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -55,13 +70,11 @@ export default function LeaderboardTable() {
                 </h1>
 
                 {/* Search Bar */}
-                <div className="mb-8 flex justify-center">
-                    <input
-                        type="text"
-                        placeholder="Find user"
-                        className="w-full max-w-md px-4 py-2 rounded-lg border-2 border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500"
-                    />
-                </div>
+                <SearchBar
+                    inputValue={inputValue}
+                    setInputValue={setInputValue}
+                    onSubmit={setSearchTerm}
+                />
 
                 {/* Toggle Button */}
                 <div className="mb-4 flex justify-center">
@@ -117,34 +130,13 @@ export default function LeaderboardTable() {
                 </div>
 
                 {/* Pagination */}
-                <div className="mt-8 flex justify-center items-center gap-2">
-                    <button
-                        onClick={handlePrev}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        &lt;
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                        <button
-                            key={num}
-                            onClick={() => handlePageClick(num)}
-                            className={`px-3 py-2 rounded ${num === currentPage
-                                ? "bg-blue-500 text-white font-bold"
-                                : "hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                                }`}
-                        >
-                            {num}
-                        </button>
-                    ))}
-                    <button
-                        onClick={handleNext}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        &gt;
-                    </button>
-                </div>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPrev={handlePrev}
+                    onNext={handleNext}
+                    onPageClick={handlePageClick}
+                />
             </div>
         </div>
     );
