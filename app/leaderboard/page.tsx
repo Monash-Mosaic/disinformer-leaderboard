@@ -1,4 +1,4 @@
-import LeaderboardTable from "@/components/LeaderboardTable";
+import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 
 export default function Leaderboard() {
     return <LeaderboardTable />;
