@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getPlayers } from "@/services/players";
-import { Player } from "@/types/player";
+import { Player, RankingCriteria } from "@/types/leaderboard";
 import SearchBar from "./LeaderboardSearchBar";
 import Pagination from "./LeaderboardPagination";
 import LeaderboardSkeleton from "./LeaderboardSkeleton";
@@ -13,7 +13,7 @@ export default function LeaderboardTable() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     // Default to disinformer mode
-    const [mode, setMode] = useState<'disinformer' | 'netizen'>('disinformer');
+    const [mode, setMode] = useState<RankingCriteria>(RankingCriteria.Disinformer);
     // Define pagination state, default to page 1
     const [currentPage, setCurrentPage] = useState(1);
     // Limit items per page
@@ -46,9 +46,9 @@ export default function LeaderboardTable() {
         setCurrentPage(1);
     }, [searchTerm]);
 
-    const toggleMode = () => setMode(mode === 'disinformer' ? 'netizen' : 'disinformer');
-    const buttonText = mode === 'disinformer' ? 'Switch to Netizen Mode' : 'Switch to Disinformer Mode';
-    const title = mode === 'disinformer' ? 'Disinformer Leaderboard' : 'Netizen Leaderboard';
+    const toggleMode = () => setMode(mode === RankingCriteria.Disinformer ? RankingCriteria.Netizen : RankingCriteria.Disinformer);
+    const buttonText = mode === RankingCriteria.Disinformer ? 'Switch to Netizen Mode' : 'Switch to Disinformer Mode';
+    const title = mode === RankingCriteria.Disinformer ? 'Disinformer Leaderboard' : 'Netizen Leaderboard';
 
     // Filter players based on search term
     const filteredPlayers = players.filter(player =>

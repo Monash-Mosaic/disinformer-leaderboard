@@ -1,11 +1,11 @@
-import { Player } from "@/types/player";
+import { Player, RankingCriteria } from "@/types/leaderboard";
 import { playersCollection } from "@/utils/firebase.client";
 import { DocumentData, Query, getDocs } from "firebase/firestore";
 
 // TODO: refactor pagination and search functionality to backend for efficiency
 // TODO: Real-time updates of leaderboard
 
-export async function getPlayers(mode?: 'disinformer' | 'netizen', query?: Query): Promise<Player[]> {
+export async function getPlayers(mode: RankingCriteria = RankingCriteria.Disinformer, query?: Query): Promise<Player[]> {
     try {
         const querySnapshot = await getDocs(query ?? playersCollection);
 
@@ -22,13 +22,15 @@ export async function getPlayers(mode?: 'disinformer' | 'netizen', query?: Query
         }) as Player[];
 
         // Sort based on mode
-        if (mode === 'disinformer') {
-            localPlayers.sort((a, b) => b.totalDisinformerPoints - a.totalDisinformerPoints); // Descending
-        } else if (mode === 'netizen') {
+        if (mode === 'netizen') {
             localPlayers.sort((a, b) => b.totalNetizenPoints - a.totalNetizenPoints); // Descending
         }
-        // If no mode, return unsorted
+        else {
+            // default to disinformer mode
+            localPlayers.sort((a, b) => b.totalDisinformerPoints - a.totalDisinformerPoints); // Descending
+        }
 
+        // Return sorted players according to the mode
         return localPlayers;
     } catch (error) {
         throw error;
