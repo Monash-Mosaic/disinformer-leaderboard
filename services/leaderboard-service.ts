@@ -36,8 +36,8 @@ function buildBaseQueryWithoutPagination(
     if (searchTermNormalized) {
         q = query(
             q,
-            where('username_lower', '>=', searchTermNormalized),
-            where('username_lower', '<=', searchTermNormalized + '\uf8ff')
+            where('username_lowercase', '>=', searchTermNormalized),
+            where('username_lowercase', '<=', searchTermNormalized + '\uf8ff')
         );
     }
 
@@ -45,8 +45,8 @@ function buildBaseQueryWithoutPagination(
     q = query(
         q,
         orderBy(rankingField, 'desc'),
-        orderBy('totalGamesPlayed', 'desc'),  // Changed to desc (more games = better)
-        orderBy('username_lower', 'asc')
+        orderBy('totalGamesPlayed', 'asc'),
+        orderBy('username_lowercase', 'asc')
     );
 
     return q;

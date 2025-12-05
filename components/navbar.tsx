@@ -40,6 +40,15 @@ export default function Navbar() {
                         >
                             Leaderboard
                         </Link>
+                        <Link
+                            href="/leaderboard-cursorbased"
+                            className={`transition-colors font-medium ${isActive('/leaderboard-cursorbased')
+                                ? 'text-cyan-500 dark:text-cyan-400'
+                                : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                        >
+                            Leaderboard (Cursor-Based)
+                        </Link>
                     </div>
 
                     {/* Right side (placeholder for user menu or other items) */}
