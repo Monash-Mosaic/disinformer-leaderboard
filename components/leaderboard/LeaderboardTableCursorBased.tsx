@@ -195,9 +195,9 @@ export default function LeaderboardTableCursorBased({
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             Points
                                         </th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
+                                        {/* <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             Games Played
-                                        </th>
+                                        </th> */}
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             Society
                                         </th>
@@ -227,9 +227,9 @@ export default function LeaderboardTableCursorBased({
                                                     ? player.totalDisinformerPoints
                                                     : player.totalNetizenPoints}
                                             </td>
-                                            <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
+                                            {/* <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
                                                 {player.totalGamesPlayed}
-                                            </td>
+                                            </td> */}
                                             <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
                                                 {player.society || "N/A"}
                                             </td>

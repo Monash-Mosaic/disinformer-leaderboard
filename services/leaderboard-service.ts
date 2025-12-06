@@ -19,6 +19,11 @@ import { CursorCache } from "../types/CursorCache";
 const ITEMS_PER_PAGE = 10;
 const cursorCache = new CursorCache();
 
+
+// TODO: Currently support sequential page access only (1, 2, 3, ...), 
+// random access (e.g., 1 -> 5 -> 3) got bugs
+
+
 // Helper: Build base query without pagination (for counting and base operations)
 function buildBaseQueryWithoutPagination(
     mode: RankingCriteria,
