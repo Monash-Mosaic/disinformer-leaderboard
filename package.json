@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "insert-test-players": "npx tsx ./scripts/insertTestPlayers.ts",
+    "delete-test-players": "npx tsx ./scripts/deleteTestPlayers.ts"
   },
   "dependencies": {
     "firebase": "^12.6.0",
@@ -20,9 +22,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.0.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
