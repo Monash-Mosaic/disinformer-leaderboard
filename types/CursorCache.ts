@@ -1,10 +1,12 @@
 import { RankingCriteria } from "@/types/leaderboard";
 
 export const CURSOR_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+export const PREFETCH_WINDOW = 3; // Number of pages to prefetch before/after current page
 
 interface CacheEntry {
     cursors: Map<number, string>;
     timestamp: number;
+    prefetchedAroundPages: Set<number>; // Tracks which pages have been prefetched around
 }
 
 export class CursorCache {
@@ -12,7 +14,8 @@ export class CursorCache {
     // {
     //   "mode:searchTerm": {
     //       cursors: Map<pageNumber, docId>,
-    //       timestamp: number
+    //       timestamp: number,
+    //       prefetchedAroundPages: Set<number>
     //   }
     // }
     private cache = new Map<string, CacheEntry>();
@@ -51,11 +54,48 @@ export class CursorCache {
         let entry = this.cache.get(key);
 
         if (!entry) {
-            entry = { cursors: new Map(), timestamp: Date.now() };
+            entry = {
+                cursors: new Map(),
+                timestamp: Date.now(),
+                prefetchedAroundPages: new Set()
+            };
             this.cache.set(key, entry);
         }
 
         entry.cursors.set(pageNumber, docId);
+    }
+
+    /**
+     * Check if cursors around a specific page have been prefetched
+     */
+    isPrefetchedAround(mode: RankingCriteria, pageNumber: number, searchTerm = ""): boolean {
+        const key = this.getKey(mode, searchTerm);
+        const entry = this.cache.get(key);
+
+        if (!this.isEntryValid(entry)) {
+            return false;
+        }
+
+        return entry!.prefetchedAroundPages.has(pageNumber);
+    }
+
+    /**
+     * Mark that cursors around a specific page have been prefetched
+     */
+    markPrefetchedAround(mode: RankingCriteria, pageNumber: number, searchTerm = ""): void {
+        const key = this.getKey(mode, searchTerm);
+        let entry = this.cache.get(key);
+
+        if (!entry) {
+            entry = {
+                cursors: new Map(),
+                timestamp: Date.now(),
+                prefetchedAroundPages: new Set()
+            };
+            this.cache.set(key, entry);
+        }
+
+        entry.prefetchedAroundPages.add(pageNumber);
     }
 
     /**
