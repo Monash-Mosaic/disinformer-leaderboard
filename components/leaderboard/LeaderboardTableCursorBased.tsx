@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { use, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPaginatedLeaderboard } from "@/services/leaderboard-service";
 import { Player, RankingCriteria } from "@/types/leaderboard";
@@ -15,9 +15,10 @@ import LeaderboardToggleButton from "./LeaderboardToggleButton";
  * These are passed from the Server Component and represent URL state
  */
 interface LeaderboardTableCursorBasedProps {
-    initialPage?: number;           // Starting page number from URL
-    initialMode?: RankingCriteria;  // Initial ranking mode from URL
-    initialSearch?: string;         // Initial search term from URL
+    dataPromise: Promise<LeaderboardPageResult>;  // Server-fetched data promise
+    initialPage: number;           // Starting page number from URL
+    initialMode: RankingCriteria;  // Initial ranking mode from URL
+    initialSearch: string;         // Initial search term from URL
 }
 
 /**
@@ -25,6 +26,12 @@ interface LeaderboardTableCursorBasedProps {
  *
  * This component implements cursor-based pagination using the leaderboard-service.ts.
  * Features efficient random access pagination with cursor caching.
+ *
+ * Architecture:
+ * - Server fetches initial data as a promise
+ * - Client component uses React's "use" hook to resolve the promise
+ * - Handles subsequent page changes, mode switches, and searches with client-side re-fetching
+ * - URL state synchronized for shareable links
  *
  * Key Features:
  * - Cursor-based pagination for Firestore efficiency
@@ -34,18 +41,21 @@ interface LeaderboardTableCursorBasedProps {
  * - Cursor caching for instant navigation between pages
  */
 export default function LeaderboardTableCursorBased({
-    initialPage = 1,
-    initialMode = RankingCriteria.Disinformer,
-    initialSearch = ''
+    dataPromise,
+    initialPage,
+    initialMode,
+    initialSearch,
 }: LeaderboardTableCursorBasedProps) {
+    // Use the "use" hook to resolve the server-fetched data promise
+    const initialData = use(dataPromise);
+
     // Next.js navigation hooks
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
 
     // Component state
-    const [data, setData] = useState<LeaderboardPageResult | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<LeaderboardPageResult>(initialData);
     const [error, setError] = useState<string | null>(null);
 
     // Filter/navigation state
@@ -53,6 +63,25 @@ export default function LeaderboardTableCursorBased({
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [inputValue, setInputValue] = useState(initialSearch);
     const [searchTerm, setSearchTerm] = useState(initialSearch);
+    const [isLoading, setIsLoading] = useState(false);
+
+    /**
+     * Fetches leaderboard data on the client side
+     * Used for subsequent navigations after initial server fetch
+     */
+    const fetchLeaderboardData = async (page: number, rankMode: RankingCriteria, search: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const result = await getPaginatedLeaderboard(page, rankMode, search);
+            setData(result);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     /**
      * Updates URL with new state parameters
@@ -85,30 +114,6 @@ export default function LeaderboardTableCursorBased({
     };
 
     /**
-     * Effect: Fetch leaderboard data when page, mode, or search changes
-     *
-     * Uses the cursor-based leaderboard service for efficient pagination.
-     * The service handles cursor caching internally for random access.
-     */
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const result = await getPaginatedLeaderboard(currentPage, mode, searchTerm);
-                setData(result);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [currentPage, mode, searchTerm]);
-
-    /**
      * Handles ranking mode toggle (Disinformer <-> Netizen)
      * - Switches between point ranking systems
      * - Resets to page 1 (different data set)
@@ -119,8 +124,10 @@ export default function LeaderboardTableCursorBased({
             ? RankingCriteria.Netizen
             : RankingCriteria.Disinformer;
         setMode(newMode);
-        setCurrentPage(1);  // Always reset to first page on mode change
+        setCurrentPage(1);
+
         updateURL(1, newMode, searchTerm);
+        fetchLeaderboardData(1, newMode, searchTerm);
     };
 
     /**
@@ -131,20 +138,23 @@ export default function LeaderboardTableCursorBased({
      */
     const handleSearchSubmit = (term: string) => {
         setSearchTerm(term);
-        setCurrentPage(1);  // Reset to first page on new search
+        setCurrentPage(1);
         setInputValue(term);
+
         updateURL(1, mode, term);
+        fetchLeaderboardData(1, mode, term);
     };
 
     /**
      * Handles page navigation
      * - Updates current page
      * - Preserves mode and search state
-     * - Triggers data fetch via useEffect
+     * - Triggers data fetch
      */
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
         updateURL(page, mode, searchTerm);
+        fetchLeaderboardData(page, mode, searchTerm);
     };
 
     // Dynamic UI text based on current mode
@@ -154,6 +164,8 @@ export default function LeaderboardTableCursorBased({
     const title = mode === RankingCriteria.Disinformer
         ? 'Disinformer Leaderboard (Cursor-Based)'
         : 'Netizen Leaderboard (Cursor-Based)';
+
+    const loading = isLoading || isPending;
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans py-8 px-4">
@@ -166,16 +178,16 @@ export default function LeaderboardTableCursorBased({
                     inputValue={inputValue}
                     setInputValue={setInputValue}
                     onSubmit={handleSearchSubmit}
-                    disabled={loading || isPending}
+                    disabled={loading}
                 />
 
                 <LeaderboardToggleButton
                     onClick={handleModeToggle}
-                    disabled={loading || isPending}
+                    disabled={loading}
                     text={buttonText}
                 />
 
-                {loading || isPending ? (
+                {loading ? (
                     <LeaderboardSkeleton />
                 ) : error ? (
                     <p className="text-red-500 text-center">{error}</p>
@@ -195,9 +207,6 @@ export default function LeaderboardTableCursorBased({
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             Points
                                         </th>
-                                        {/* <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Games Played
-                                        </th> */}
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             Society
                                         </th>
@@ -227,9 +236,6 @@ export default function LeaderboardTableCursorBased({
                                                     ? player.totalDisinformerPoints
                                                     : player.totalNetizenPoints}
                                             </td>
-                                            {/* <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
-                                                {player.totalGamesPlayed}
-                                            </td> */}
                                             <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
                                                 {player.society || "N/A"}
                                             </td>

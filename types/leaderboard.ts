@@ -4,7 +4,6 @@ export enum RankingCriteria {
 }
 
 export interface Player {
-    // keep id as backup for unique identification incase username not unique
     id: string;
     username: string;
     totalGamesPlayed: number;
@@ -12,4 +11,12 @@ export interface Player {
     totalNetizenPoints: number;
     society: string;
     branch: string;
+    email: string;
+    username_lowercase: string;
+    // Convert to ISO string for easier serialization
+    lastGamePlayedAt?: string | null;
+    // Convert to ISO string for easier serialization
+    createdAt?: string | null;
+    avatar?: string | null;
+    surveysCompleted?: number;
 }

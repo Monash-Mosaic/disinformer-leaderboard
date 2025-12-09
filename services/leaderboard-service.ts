@@ -88,6 +88,27 @@ async function getTotalCount(mode: RankingCriteria, searchTerm?: string): Promis
     return snapshot.data().count;
 }
 
+// Helper: Serialize Firestore document to Player object
+function serializePlayer(doc: DocumentData): Player {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        username: data.username ?? '',
+        totalGamesPlayed: data.totalGamesPlayed ?? 0,
+        totalDisinformerPoints: data.totalDisinformerPoints ?? 0,
+        totalNetizenPoints: data.totalNetizenPoints ?? 0,
+        society: data.society ?? '',
+        branch: data.branch ?? '',
+        email: data.email ?? '',
+        username_lowercase: data.username_lowercase ?? '',
+        // Convert Firestore Timestamps to ISO strings or numbers to allow passing fetched data from server to client
+        lastGamePlayedAt: data.lastGamePlayedAt?.toDate?.()?.toISOString() ?? null,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
+        avatar: data.avatar ?? null,
+        surveysCompleted: data.surveysCompleted ?? 0,
+    } as Player;
+}
+
 /**
  * HELPER FUNCTION: Prefetch cursors around current page
  *
@@ -239,15 +260,7 @@ export async function getPaginatedLeaderboard(
         const pageSlice = allDocs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
         // Transform documents to Player objects
-        const players: Player[] = pageSlice.map((doc: DocumentData) => {
-            const data = doc.data();
-            return {
-                ...data,
-                totalDisinformerPoints: data.totalDisinformerPoints ?? 0,
-                totalNetizenPoints: data.totalNetizenPoints ?? 0,
-                id: doc.id,
-            } as Player;
-        });
+        const players: Player[] = pageSlice.map(serializePlayer);
 
         // Step 8: Cache cursor for current page (update cache dynamically)
         if (players.length > 0) {

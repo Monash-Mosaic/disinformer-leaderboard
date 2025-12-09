@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
 import LeaderboardTableCursorBased from '@/components/leaderboard/LeaderboardTableCursorBased';
+import { getPaginatedLeaderboard } from '@/services/leaderboard-service';
 
 /**
  * Interface for URL search parameters used in leaderboard navigation
@@ -24,6 +25,7 @@ interface SearchParams {
  * - Random access to any page (jump from page 1 to page 10)
  * - Search filtering with dynamic pagination updates
  * - URL state preservation for shareable links
+ * - Data fetched on server, passed to client component via promise
  *
  * @param searchParams - Promise containing URL parameters (Next.js 15+ pattern)
  */
@@ -40,11 +42,16 @@ export default async function LeaderboardCursorBased({
     const mode = (params.mode as RankingCriteria) || RankingCriteria.Disinformer;  // Default mode
     const search = params.search || '';  // Empty string if no search term
 
+    // Fetch data from the leaderboard service
+    // This promise will be consumed by the client component using the "use" hook
+    const dataPromise = getPaginatedLeaderboard(page, mode, search);
+
     return (
         // Suspense boundary provides loading state while fetching data
         // Shows skeleton UI during initial load and navigation
         <Suspense fallback={<LeaderboardSkeleton />}>
             <LeaderboardTableCursorBased
+                dataPromise={dataPromise}
                 initialPage={page}
                 initialMode={mode}
                 initialSearch={search}
