@@ -31,8 +31,8 @@ interface TestPlayer {
 
 function generateRandomPoints(): { disinformer: number; netizen: number } {
     return {
-        disinformer: Math.floor(Math.random() * 500),
-        netizen: Math.floor(Math.random() * 500),
+        disinformer: Math.floor(Math.random() * 300) + 200,
+        netizen: Math.floor(Math.random() * 300) + 200,
     };
 }
 
@@ -110,4 +110,6 @@ async function insertTestPlayers(): Promise<void> {
     }
 }
 
-insertTestPlayers();
+if (process.argv[1]?.endsWith('insertTestPlayers.ts')) {
+    insertTestPlayers();
+}
