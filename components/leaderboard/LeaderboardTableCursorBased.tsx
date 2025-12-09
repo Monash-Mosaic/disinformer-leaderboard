@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useState, useTransition } from "react";
+import { use, useState, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPaginatedLeaderboard } from "@/services/leaderboard-service";
+import { getPaginatedLeaderboard, subscribeToLeaderboardWithPagination } from "@/services/leaderboard-service";
 import { Player, RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
 import LeaderboardSearchBar from "./LeaderboardSearchBar";
@@ -19,6 +19,7 @@ interface LeaderboardTableCursorBasedProps {
     initialPage: number;           // Starting page number from URL
     initialMode: RankingCriteria;  // Initial ranking mode from URL
     initialSearch: string;         // Initial search term from URL
+    enableRealtime?: boolean;      // Enable real-time updates (default: true)
 }
 
 /**
@@ -45,6 +46,7 @@ export default function LeaderboardTableCursorBased({
     initialPage,
     initialMode,
     initialSearch,
+    enableRealtime = true,
 }: LeaderboardTableCursorBasedProps) {
     // Use the "use" hook to resolve the server-fetched data promise
     const initialData = use(dataPromise);
@@ -64,6 +66,50 @@ export default function LeaderboardTableCursorBased({
     const [inputValue, setInputValue] = useState(initialSearch);
     const [searchTerm, setSearchTerm] = useState(initialSearch);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Real-time subscription state
+    const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
+    const [isRealtime, setIsRealtime] = useState(false);
+
+    // Set up real-time listener on mount and when dependencies change
+    useEffect(() => {
+        if (!enableRealtime) return;
+
+        console.log('[Realtime] Setting up listener for page', currentPage, 'mode', mode);
+
+        // Subscribe to real-time updates
+        const unsub = subscribeToLeaderboardWithPagination(
+            currentPage,
+            mode,
+            (result) => {
+                console.log('[Realtime] Data updated:', result);
+                setData(result);
+            },
+            (err) => {
+                console.error('[Realtime] Error:', err);
+                setError(err.message);
+            },
+            searchTerm || undefined
+        );
+
+        setUnsubscribe(() => unsub);
+        setIsRealtime(true);
+
+        return () => {
+            console.log('[Realtime] Unsubscribing listener');
+            unsub();
+            setIsRealtime(false);
+        };
+    }, [currentPage, mode, searchTerm, enableRealtime]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
+    }, [unsubscribe]);
 
     /**
      * Fetches leaderboard data on the client side

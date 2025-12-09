@@ -11,6 +11,7 @@ import {
     doc,
     Query,
     DocumentData,
+    onSnapshot,
 } from "firebase/firestore";
 import { playersCollection } from "@/utils/firebase.client";
 import { LeaderboardPageResult } from "@/types/pagination";
@@ -293,4 +294,110 @@ export async function getPaginatedLeaderboard(
         console.error("Error fetching leaderboard page:", error);
         throw error;
     }
+}
+
+/**
+ * Real-time listener for a specific query page
+ * Watches for changes and calls callback whenever data updates
+ * 
+ * @param baseQuery - The Firestore query to listen to
+ * @param onUpdate - Callback when data updates
+ * @param onError - Callback when error occurs
+ * @returns Unsubscribe function to stop listening
+ */
+export function subscribeToLeaderboardPage(
+    baseQuery: Query,
+    onUpdate: (players: Player[]) => void,
+    onError: (error: Error) => void
+): () => void {
+    const unsubscribe = onSnapshot(
+        baseQuery,
+        (snapshot) => {
+            try {
+                const players: Player[] = snapshot.docs.map(serializePlayer);
+                onUpdate(players);
+            } catch (error) {
+                onError(error instanceof Error ? error : new Error('Failed to process snapshot'));
+            }
+        },
+        (error) => {
+            onError(new Error(`Snapshot listener error: ${error.message}`));
+        }
+    );
+
+    return unsubscribe;
+}
+
+/**
+ * Real-time listener for entire leaderboard with pagination
+ * Rebuilds page data when any player changes
+ * 
+ * @param pageNumber - Current page number
+ * @param mode - Ranking criteria (Disinformer or Netizen)
+ * @param onUpdate - Callback with paginated results
+ * @param onError - Callback when error occurs
+ * @param searchTerm - Optional search filter
+ * @returns Unsubscribe function to stop listening
+ */
+export function subscribeToLeaderboardWithPagination(
+    pageNumber: number,
+    mode: RankingCriteria,
+    onUpdate: (result: LeaderboardPageResult) => void,
+    onError: (error: Error) => void,
+    searchTerm?: string
+): () => void {
+    const searchTermNormalized = searchTerm ? searchTermNormalize(searchTerm) : undefined;
+    const rankingField = mode === RankingCriteria.Netizen
+        ? "totalNetizenPoints"
+        : "totalDisinformerPoints";
+
+    // Build the base query for real-time listening
+    let q: Query = playersCollection;
+
+    if (searchTermNormalized) {
+        q = query(
+            q,
+            where('username_lowercase', '>=', searchTermNormalized),
+            where('username_lowercase', '<=', searchTermNormalized + '\uf8ff')
+        );
+    }
+
+    q = query(
+        q,
+        orderBy(rankingField, 'desc'),
+        orderBy('totalGamesPlayed', 'asc'),
+        orderBy('username_lowercase', 'asc')
+    );
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+            try {
+                const allPlayers = snapshot.docs.map(serializePlayer);
+                const totalPages = Math.ceil(allPlayers.length / ITEMS_PER_PAGE) || 1;
+                const validPageNumber = Math.min(pageNumber, totalPages);
+
+                const startIdx = (validPageNumber - 1) * ITEMS_PER_PAGE;
+                const endIdx = startIdx + ITEMS_PER_PAGE;
+                const pageSlice = allPlayers.slice(startIdx, endIdx);
+
+                onUpdate({
+                    players: pageSlice,
+                    totalPages,
+                    currentPage: validPageNumber,
+                    hasNextPage: validPageNumber < totalPages,
+                    hasPrevPage: validPageNumber > 1,
+                    cursors: {},
+                });
+            } catch (error) {
+                onError(error instanceof Error ? error : new Error('Failed to process snapshot'));
+            }
+        },
+        (error) => {
+            onError(new Error(`Snapshot listener error: ${error.message}`));
+        }
+    );
+
+    return unsubscribe;
 }
