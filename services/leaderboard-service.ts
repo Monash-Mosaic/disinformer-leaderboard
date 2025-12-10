@@ -12,6 +12,7 @@ import {
     Query,
     DocumentData,
     onSnapshot,
+    limitToLast,
 } from "firebase/firestore";
 import { playersCollection } from "@/utils/firebase.client";
 import { LeaderboardPageResult } from "@/types/pagination";
@@ -19,6 +20,8 @@ import { CursorCache, PREFETCH_WINDOW } from "../types/CursorCache";
 
 const ITEMS_PER_PAGE = 10;
 const cursorCache = new CursorCache();
+
+// TODO: Implement adaptive prefetching based on navigation direction to avoid fetching from beginning (full table fetch)
 
 /**
  * IMPLEMENTATION: Optimized Lazy Prefetch with Smart Window
@@ -131,20 +134,16 @@ async function prefetchLastPageCursor(
 
         console.debug(`[Cursor] Prefetching last page (page ${totalPages}) cursor`);
 
-        // Calculate docs to fetch to reach last page
-        const skipAmount = (totalPages - 1) * ITEMS_PER_PAGE;
-        const lastPageQuery = addPaginationLimitToQuery(baseQuery, skipAmount + ITEMS_PER_PAGE + 1);
-
+        // Fetch only the last document (efficient, no skip needed)
+        const lastPageQuery = query(baseQuery, limitToLast(1));
         const snapshot = await getDocs(lastPageQuery);
-        const allDocs = snapshot.docs;
 
-        if (allDocs.length > 0) {
-            // Get the last document (end of last page)
-            const lastDocIndex = Math.min(allDocs.length - 1, skipAmount + ITEMS_PER_PAGE - 1);
-            if (lastDocIndex >= 0 && allDocs[lastDocIndex]) {
-                cursorCache.setCursor(mode, totalPages, allDocs[lastDocIndex].id, searchTermNormalized);
-                console.debug(`[Cursor] Last page cursor cached for page ${totalPages}`);
-            }
+        if (snapshot.docs.length > 0) {
+            const lastDoc = snapshot.docs[0];  // The last document in the query
+            cursorCache.setCursor(mode, totalPages, lastDoc.id, searchTermNormalized);
+            console.debug(`[Cursor] Last page cursor cached for page ${totalPages}`);
+        } else {
+            console.warn(`[Cursor] No documents found for last page cursor prefetch`);
         }
     } catch (error) {
         console.error(`[Cursor] Error prefetching last page cursor:`, error);
@@ -200,6 +199,8 @@ async function prefetchCursorsAround(
                 prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
             } else {
                 console.debug(`[Cursor] No cursor for page ${startPage - 1}, cannot prefetch around pages ${startPage}-${endPage}`);
+                // TODO: Consider adding fallback logic here to fetch from beginning if needed so that pages cursors can be cached
+                // Delegating to getPaginatedLeaderboard to handle missing cursors will cause them not being cached
                 return;
             }
         } else {
