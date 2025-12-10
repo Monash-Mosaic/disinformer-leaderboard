@@ -1,10 +1,32 @@
 "use client";
 
+import LeaderboardSearchBar from "./LeaderboardSearchBar";
+import LeaderboardToggleButton from "./LeaderboardToggleButton";
+
 export default function LeaderboardSkeleton() {
     const itemsPerPage = 10;
-
+    const title = 'Disinformer Leaderboard';
     return (
         <>
+            {/* Title */}
+            <h1 className="text-4xl font-bold text-center mb-8 text-zinc-900 dark:text-white">
+                {title}
+            </h1>
+
+            {/* Search Bar Skeleton */}
+            <LeaderboardSearchBar
+                inputValue={''}
+                setInputValue={() => { }}
+                onSubmit={() => { }}
+                disabled={true}
+            />
+
+            {/* Toggle Button Skeleton */}
+            <LeaderboardToggleButton
+                onClick={() => { }}
+                disabled={true}
+                text={'Switch to Netizen Mode'}
+            />
             {/* Table Skeleton */}
             <div className="overflow-x-auto bg-white dark:bg-zinc-900 rounded-lg shadow">
                 <table className="w-full">

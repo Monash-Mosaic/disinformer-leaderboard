@@ -316,9 +316,7 @@ export default function LeaderboardTable({
                     text={buttonText}
                 />
 
-                {loading || isPending ? (
-                    <LeaderboardSkeleton />
-                ) : error ? (
+                {error ? (
                     <p className="text-red-500 text-center">{error}</p>
                 ) : (
                     <>

@@ -42,14 +42,18 @@ export default async function Leaderboard({
     const search = params.search || '';  // Empty string if no search term
 
     return (
-        // Suspense boundary provides loading state while fetching data
-        // Shows skeleton UI during initial load and navigation
-        <Suspense fallback={<LeaderboardSkeleton />}>
-            <LeaderboardTable
-                initialPage={page}
-                initialMode={mode}
-                initialSearch={search}
-            />
-        </Suspense>
+        <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans py-8 px-4">
+            <div className="max-w-6xl mx-auto">
+                {/* Suspense boundary provides loading state while fetching data */}
+                {/* Shows skeleton UI during initial load and navigation */}
+                <Suspense fallback={<LeaderboardSkeleton />}>
+                    <LeaderboardTable
+                        initialPage={page}
+                        initialMode={mode}
+                        initialSearch={search}
+                    />
+                </Suspense>
+            </div>
+        </div>
     );
 }
