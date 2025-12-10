@@ -111,6 +111,47 @@ function serializePlayer(doc: DocumentData): Player {
 }
 
 /**
+ * HELPER FUNCTION: Prefetch last page cursor
+ * 
+ * Ensures the last page is always available for quick jump-to-end navigation
+ * This is useful for pagination info and UX
+ */
+async function prefetchLastPageCursor(
+    baseQuery: Query,
+    totalPages: number,
+    mode: RankingCriteria,
+    searchTermNormalized?: string
+): Promise<void> {
+    try {
+        // Check if last page cursor already cached
+        if (cursorCache.getCursor(mode, totalPages, searchTermNormalized)) {
+            console.debug(`[Cursor] Last page cursor already cached. Skipping.`);
+            return;
+        }
+
+        console.debug(`[Cursor] Prefetching last page (page ${totalPages}) cursor`);
+
+        // Calculate docs to fetch to reach last page
+        const skipAmount = (totalPages - 1) * ITEMS_PER_PAGE;
+        const lastPageQuery = addPaginationLimitToQuery(baseQuery, skipAmount + ITEMS_PER_PAGE + 1);
+
+        const snapshot = await getDocs(lastPageQuery);
+        const allDocs = snapshot.docs;
+
+        if (allDocs.length > 0) {
+            // Get the last document (end of last page)
+            const lastDocIndex = Math.min(allDocs.length - 1, skipAmount + ITEMS_PER_PAGE - 1);
+            if (lastDocIndex >= 0 && allDocs[lastDocIndex]) {
+                cursorCache.setCursor(mode, totalPages, allDocs[lastDocIndex].id, searchTermNormalized);
+                console.debug(`[Cursor] Last page cursor cached for page ${totalPages}`);
+            }
+        }
+    } catch (error) {
+        console.error(`[Cursor] Error prefetching last page cursor:`, error);
+    }
+}
+
+/**
  * HELPER FUNCTION: Prefetch cursors around current page
  *
  * Strategy:
@@ -158,9 +199,8 @@ async function prefetchCursorsAround(
                 const cursorSnapshot = await getDoc(cursorDocRef);
                 prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
             } else {
-                // No cursor yet, will fetch from start (less efficient but necessary)
-                console.debug(`[Cursor] No cursor for page ${startPage - 1}, fetching from start`);
-                prefetchQuery = addPaginationLimitToQuery(baseQuery, docsToFetch + 1);
+                console.debug(`[Cursor] No cursor for page ${startPage - 1}, cannot prefetch around pages ${startPage}-${endPage}`);
+                return;
             }
         } else {
             // Starting from page 1
@@ -220,8 +260,13 @@ export async function getPaginatedLeaderboard(
         // Step 3: Build base query for this page
         const baseQuery = buildBaseQueryWithoutPagination(mode, searchTermNormalized);
 
-        // Step 4: Prefetch cursors around current page (lazy loading window)
+        // Step 4: Prefetch cursors around current page (limited by fetching window)
         await prefetchCursorsAround(baseQuery, totalPages, pageNumber, mode, searchTermNormalized);
+
+        // Also make sure last page cursor is prefetched for random access
+        prefetchLastPageCursor(baseQuery, totalPages, mode, searchTermNormalized).catch(err =>
+            console.error('[Cursor] Failed to prefetch last page cursor:', err)
+        );
 
         // Step 5: Get cursor for this page (O(1) lookup if prefetched)
         let pageQuery = addPaginationLimitToQuery(baseQuery, ITEMS_PER_PAGE + 1);
@@ -236,7 +281,7 @@ export async function getPaginatedLeaderboard(
                     const cursorSnapshot = await getDoc(cursorDocRef);
                     pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
                 } catch (error) {
-                    console.warn(`[Cursor] Failed to use cached cursor for page ${pageNumber}, falling back to full fetch`);
+                    console.warn(`[Cursor] Failed to use cached cursor for page ${pageNumber}, falling back to full fetch from start`);
                     // Fallback: fetch from beginning with offset (less efficient but ensures we get data)
                     pageQuery = addPaginationLimitToQuery(baseQuery, pageNumber * ITEMS_PER_PAGE + 1);
                 }
