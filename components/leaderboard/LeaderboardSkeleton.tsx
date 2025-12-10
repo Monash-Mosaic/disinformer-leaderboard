@@ -13,8 +13,8 @@ export default function LeaderboardSkeleton() {
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Place</th>
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Username</th>
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Points</th>
-                            <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">IFRO Societies</th>
-                            <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Branches</th>
+                            <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">IFRC Society</th>
+                            <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Branch</th>
                         </tr>
                     </thead>
                     <tbody>

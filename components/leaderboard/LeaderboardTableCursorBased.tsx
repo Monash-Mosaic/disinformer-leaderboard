@@ -3,11 +3,10 @@
 import { use, useState, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPaginatedLeaderboard, subscribeToLeaderboardWithPagination } from "@/services/leaderboard-service";
-import { Player, RankingCriteria } from "@/types/leaderboard";
+import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
 import LeaderboardSearchBar from "./LeaderboardSearchBar";
 import LeaderboardPagination from "./LeaderboardPagination";
-import LeaderboardSkeleton from "./LeaderboardSkeleton";
 import LeaderboardToggleButton from "./LeaderboardToggleButton";
 
 /**
@@ -233,9 +232,7 @@ export default function LeaderboardTableCursorBased({
                     text={buttonText}
                 />
 
-                {loading ? (
-                    <LeaderboardSkeleton />
-                ) : error ? (
+                {error ? (
                     <p className="text-red-500 text-center">{error}</p>
                 ) : data ? (
                     <>
@@ -254,7 +251,7 @@ export default function LeaderboardTableCursorBased({
                                             Points
                                         </th>
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Society
+                                            IFRC Society
                                         </th>
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             Branch

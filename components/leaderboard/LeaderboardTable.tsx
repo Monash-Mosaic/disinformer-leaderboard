@@ -175,12 +175,12 @@ export default function LeaderboardTable({
                     try {
                         const totalCount = await getTotalCount(mode, searchTerm);
                         totalCountCacheRef.current[cacheKey] = totalCount;
-                        
+
                         // Pre-fetch all page cursors for instant navigation to any page
                         const cursors = await prefetchPageCursors(
-                            mode, 
-                            searchTerm, 
-                            totalCount, 
+                            mode,
+                            searchTerm,
+                            totalCount,
                             itemsPerPage
                         );
                         cursorMapRef.current[cacheKey] = cursors;
@@ -198,7 +198,7 @@ export default function LeaderboardTable({
                     const cached = pageCacheRef.current[pageKey];
                     setPlayers(cached.data.players);
                     setHasNextPage(cached.data.hasMore);
-                    
+
                     // Calculate total pages from cached count if available
                     if (totalCountCacheRef.current[cacheKey]) {
                         const totalCount = totalCountCacheRef.current[cacheKey];
@@ -227,7 +227,7 @@ export default function LeaderboardTable({
                     // Update UI state
                     setPlayers(result.players);
                     setHasNextPage(result.hasMore);
-                    
+
                     // Calculate total pages from cached count if available
                     if (totalCountCacheRef.current[cacheKey]) {
                         const totalCount = totalCountCacheRef.current[cacheKey];
@@ -330,8 +330,8 @@ export default function LeaderboardTable({
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Place</th>
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Username</th>
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Points</th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">IFRO Societies</th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Branches</th>
+                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">IFRC Society</th>
+                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Branch</th>
                                     </tr>
                                 </thead>
                                 <tbody>
