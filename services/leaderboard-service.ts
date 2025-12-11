@@ -211,10 +211,11 @@ async function prefetchCursorsAround(
                 reads += 1;  // Count the getDoc read
                 prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
             } else {
-                console.debug(`[Cursor] No cursor for page ${startPage - 1}, cannot prefetch around pages ${startPage}-${endPage}`);
-                // TODO: Consider adding fallback logic here to fetch from beginning if needed so that pages cursors can be cached
-                // Delegating to getPaginatedLeaderboard to handle missing cursors will cause them not being cached
-                return;
+                // FALLBACK: No cursor available, fetch from beginning
+                console.debug(`[Cursor] No cursor for page ${startPage - 1}, falling back to fetch from beginning`);
+                // Fetch from start up to endPage to cache all cursors in range
+                const docsFromStart = endPage * ITEMS_PER_PAGE;
+                prefetchQuery = addPaginationLimitToQuery(baseQuery, docsFromStart + 1);
             }
         } else {
             // Starting from page 1
@@ -223,15 +224,19 @@ async function prefetchCursorsAround(
 
         // Fetch the documents
         const snapshot = await getDocs(prefetchQuery);
-        reads += snapshot.docs.length;  // Count the getDocs reads
+        reads += snapshot.docs.length;
         const allDocs = snapshot.docs;
 
-        // Cache cursors for each page in the range
-        for (let i = 0; i < allDocs.length; i++) {
-            const pageNumber = startPage + Math.floor(i / ITEMS_PER_PAGE);
+        // Determine offset if we fetched from beginning
+        const fetchedFromStart = startPage > 1 && !cursorCache.getCursor(mode, startPage - 1, searchTermNormalized);
+        const docOffset = fetchedFromStart ? (startPage - 1) * ITEMS_PER_PAGE : 0;
 
+        // Cache cursors for each page in the range
+        for (let i = docOffset; i < allDocs.length; i++) {
+            const pageNumber = Math.floor(i / ITEMS_PER_PAGE) + 1;
+            
             // Cache cursor at end of each page within range
-            if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber <= endPage) {
+            if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber >= startPage && pageNumber <= endPage) {
                 cursorCache.setCursor(mode, pageNumber, allDocs[i].id, searchTermNormalized);
             }
         }
@@ -290,24 +295,15 @@ export async function getPaginatedLeaderboard(
 
         if (pageNumber > 1) {
             const cursorDocId = cursorCache.getCursor(mode, pageNumber - 1, searchTermNormalized);
-
-            if (cursorDocId) {
-                // Use cached cursor to jump to page
-                try {
-                    const cursorDocRef = doc(playersCollection, cursorDocId);
-                    const cursorSnapshot = await getDoc(cursorDocRef);
-                    reads += 1;  // Count the getDoc read
-                    pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
-                } catch (error) {
-                    console.warn(`[Cursor] Failed to use cached cursor for page ${pageNumber}, falling back to full fetch from start`);
-                    // Fallback: fetch from beginning with offset (less efficient but ensures we get data)
-                    pageQuery = addPaginationLimitToQuery(baseQuery, pageNumber * ITEMS_PER_PAGE + 1);
-                }
-            } else {
-                // No cached cursor, will need to fetch from beginning
-                console.debug(`[Cursor] No cursor cached for page ${pageNumber - 1}, fetching from beginning`);
-                pageQuery = addPaginationLimitToQuery(baseQuery, pageNumber * ITEMS_PER_PAGE + 1);
+            
+            if (!cursorDocId) {
+                throw new Error(`Cursor not found for page ${pageNumber - 1}. This should not happen after prefetch.`);
             }
+            
+            const cursorDocRef = doc(playersCollection, cursorDocId);
+            const cursorSnapshot = await getDoc(cursorDocRef);
+            reads += 1;
+            pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
         }
 
         // Step 6: Execute the page query
@@ -315,23 +311,11 @@ export async function getPaginatedLeaderboard(
         reads += querySnapshot.docs.length;  // Count the getDocs reads
         const allDocs = querySnapshot.docs;
 
-        // Step 7: Slice to get only the current page (skip docs before current page if needed)
-        let startIndex = 0;
-        if (pageNumber > 1 && !cursorCache.getCursor(mode, pageNumber - 1, searchTermNormalized)) {
-            // If we had to fetch from beginning, skip to the right page
-            startIndex = (pageNumber - 1) * ITEMS_PER_PAGE;
-        }
-
-        const pageSlice = allDocs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+        // Step 7: Get the current page
+        const pageSlice = allDocs.slice(0, ITEMS_PER_PAGE);
 
         // Transform documents to Player objects
         const players: Player[] = pageSlice.map(serializePlayer);
-
-        // Step 8: Cache cursor for current page (update cache dynamically)
-        if (players.length > 0) {
-            const lastPlayer = players[players.length - 1];
-            cursorCache.setCursor(mode, pageNumber, lastPlayer.id, searchTermNormalized);
-        }
 
         // Step 9: Log cache stats for debugging
         const stats = cursorCache.getStats(mode, searchTermNormalized);
@@ -348,8 +332,8 @@ export async function getPaginatedLeaderboard(
             hasNextPage: pageNumber < totalPages,
             hasPrevPage: pageNumber > 1,
             cursors: {
-                nextPageDocId: allDocs.length > startIndex + ITEMS_PER_PAGE
-                    ? allDocs[startIndex + ITEMS_PER_PAGE].id
+                nextPageDocId: allDocs.length > ITEMS_PER_PAGE
+                    ? allDocs[ITEMS_PER_PAGE].id
                     : undefined,
                 prevPageDocId: pageNumber > 1
                     ? players[0]?.id
