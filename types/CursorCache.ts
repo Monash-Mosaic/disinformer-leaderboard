@@ -7,6 +7,7 @@ interface CacheEntry {
     cursors: Map<number, string>;
     timestamp: number;
     prefetchedAroundPages: Set<number>; // Tracks which pages have been prefetched around
+    lastAccessedPage?: number; // Tracks last accessed page for navigation direction detection
 }
 
 export class CursorCache {
@@ -125,6 +126,40 @@ export class CursorCache {
             cacheAge,
             isExpired,
         };
+    }
+
+    /**
+     * Get last accessed page for navigation direction detection
+     */
+    getLastAccessedPage(mode: RankingCriteria, searchTerm = ""): number | null {
+        const key = this.getKey(mode, searchTerm);
+        const entry = this.cache.get(key);
+
+        if (!this.isEntryValid(entry)) {
+            return null;
+        }
+
+        return entry!.lastAccessedPage ?? null;
+    }
+
+    /**
+     * Record page access for navigation direction detection
+     */
+    recordPageAccess(mode: RankingCriteria, pageNumber: number, searchTerm = ""): void {
+        const key = this.getKey(mode, searchTerm);
+        let entry = this.cache.get(key);
+
+        if (!entry) {
+            entry = {
+                cursors: new Map(),
+                timestamp: Date.now(),
+                prefetchedAroundPages: new Set(),
+                lastAccessedPage: pageNumber
+            };
+            this.cache.set(key, entry);
+        } else {
+            entry.lastAccessedPage = pageNumber;
+        }
     }
 
     /**

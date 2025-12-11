@@ -13,6 +13,7 @@ import {
     DocumentData,
     onSnapshot,
     limitToLast,
+    endBefore,
 } from "firebase/firestore";
 import { playersCollection } from "@/utils/firebase.client";
 import { LeaderboardPageResult } from "@/types/pagination";
@@ -23,13 +24,60 @@ const cursorCache = new CursorCache();
 
 let totalFirestoreReads = 0;
 
+enum NavigationDirection {
+    Forward = "Forward",
+    Backward = "Backward",
+    JumpToStart = "JumpToStart",
+    JumpToEnd = "JumpToEnd",
+}
+
 // Helper to log Firestore read counts for cost estimation
 function logFirestoreReads(operation: string, readCount: number) {
   totalFirestoreReads += readCount;
   console.log(`[Firestore Reads] ${operation}: ${readCount} documents read (Total: ${totalFirestoreReads})`);
 }
 
-// TODO: Implement adaptive prefetching based on navigation direction to avoid fetching from beginning (full table fetch)
+/**
+ * Detect navigation direction based on current and last accessed page
+ */
+function detectNavigationDirection(
+    currentPage: number,
+    lastAccessedPage: number | null,
+    totalPages: number
+): NavigationDirection {
+    // First access or no history
+    if (lastAccessedPage === null) {
+        if (currentPage === 1) {
+            return NavigationDirection.JumpToStart;
+        } else if (currentPage === totalPages) {
+            return NavigationDirection.JumpToEnd;
+        }
+        return NavigationDirection.Forward;
+    }
+
+    // Jump to start
+    if (currentPage === 1) {
+        return NavigationDirection.JumpToStart;
+    }
+
+    // Jump to end
+    if (currentPage === totalPages) {
+        return NavigationDirection.JumpToEnd;
+    }
+
+    // Forward navigation
+    if (currentPage > lastAccessedPage) {
+        return NavigationDirection.Forward;
+    }
+
+    // Backward navigation
+    if (currentPage < lastAccessedPage) {
+        return NavigationDirection.Backward;
+    }
+
+    // Same page (shouldn't happen, but default to forward)
+    return NavigationDirection.Forward;
+}
 
 /**
  * IMPLEMENTATION: Optimized Lazy Prefetch with Smart Window
@@ -162,18 +210,20 @@ async function prefetchLastPageCursor(
 }
 
 /**
- * HELPER FUNCTION: Prefetch cursors around current page
+ * HELPER FUNCTION: Prefetch cursors around current page with adaptive direction-aware strategy
  *
  * Strategy:
- * - Fetch window of pages: [currentPage - PREFETCH_WINDOW] to [currentPage + PREFETCH_WINDOW]
- * - Skip pages that already have cached cursors
- * - Intelligently fill gaps in the cache to minimize fetches
- * - Cache cursor at end of each page in the window
- * - Mark this page range as prefetched to avoid re-fetching
+ * - Detect navigation direction (Forward, Backward, JumpToStart, JumpToEnd)
+ * - Adapt fetch range and query based on direction:
+ *   - Forward: Fetch forward from (currentPage - PREFETCH_WINDOW) using startAfter()
+ *   - Backward: Fetch backward from currentPage using endBefore() + limitToLast()
+ *   - JumpToStart: Fetch forward from page 1
+ *   - JumpToEnd: Fetch backward from last page using endBefore() + limitToLast()
+ * - Always use cursor-based queries to avoid full database fetches
+ * - Gracefully fallback to forward fetch if cursors are missing
  *
- * Optimization: Only fetches missing cursors, skips already-cached ones
- * Cost per prefetch: Variable based on cache gaps (~10-70 document reads)
- * Benefit: Covers most user navigation patterns with minimal refetching
+ * Optimization: Consistent ~40 document reads per prefetch (4 pages × 10 items)
+ * Benefit: Efficient backward navigation without full dataset fetch
  */
 async function prefetchCursorsAround(
     baseQuery: Query,
@@ -190,9 +240,47 @@ async function prefetchCursorsAround(
             return;
         }
 
-        // Calculate the range to prefetch
-        const startPage = Math.max(1, currentPage - PREFETCH_WINDOW);
-        const endPage = Math.min(totalPages, currentPage + PREFETCH_WINDOW);
+        // Detect navigation direction
+        const lastAccessedPage = cursorCache.getLastAccessedPage(mode, searchTermNormalized);
+        const direction = detectNavigationDirection(currentPage, lastAccessedPage, totalPages);
+
+        console.debug(`[Cursor] Navigation: ${direction} (current: ${currentPage}, last: ${lastAccessedPage ?? 'none'})`);
+
+        // Calculate page range based on direction
+        let startPage: number;
+        let endPage: number;
+        let useBackwardFetch = false;
+
+        switch (direction) {
+            case NavigationDirection.Backward:
+                // For backward navigation, only fetch pages before current page
+                endPage = currentPage;
+                startPage = Math.max(1, currentPage - PREFETCH_WINDOW);
+                useBackwardFetch = true;
+                break;
+
+            case NavigationDirection.JumpToEnd:
+                // Jump to end: fetch pages before last page
+                endPage = currentPage; // currentPage === totalPages
+                startPage = Math.max(1, currentPage - PREFETCH_WINDOW);
+                useBackwardFetch = true;
+                break;
+
+            case NavigationDirection.JumpToStart:
+                // Jump to start: fetch pages from beginning
+                startPage = 1;
+                endPage = Math.min(totalPages, 1 + PREFETCH_WINDOW);
+                useBackwardFetch = false;
+                break;
+
+            case NavigationDirection.Forward:
+            default:
+                // Forward navigation: fetch pages around current page
+                startPage = Math.max(1, currentPage - PREFETCH_WINDOW);
+                endPage = Math.min(totalPages, currentPage + PREFETCH_WINDOW);
+                useBackwardFetch = false;
+                break;
+        }
 
         // Identify gaps in cache: pages that need cursors
         const missingPages = new Set<number>();
@@ -209,72 +297,91 @@ async function prefetchCursorsAround(
             return;
         }
 
-        // Find optimal fetch range: start from first missing page or earlier cached page
-        let fetchStartPage = Math.min(...Array.from(missingPages));
-        const cachedPageBefore = fetchStartPage - 1;
-        
-        // If we have a cached cursor before the gap, use it as anchor
-        const hasCachedAnchor = cachedPageBefore >= 1 && cursorCache.getCursor(mode, cachedPageBefore, searchTermNormalized);
-        if (hasCachedAnchor) {
-            fetchStartPage = cachedPageBefore;
-        }
-
-        const docsToFetch = (endPage - fetchStartPage + 1) * ITEMS_PER_PAGE;
+        const docsToFetch = (endPage - startPage + 1) * ITEMS_PER_PAGE;
 
         console.debug(
-            `[Cursor] Prefetching missing cursors for pages ${startPage}-${endPage}. ` +
-            `Fetching from page ${fetchStartPage} (${missingPages.size} pages missing, ${docsToFetch} docs)`
+            `[Cursor] Prefetching pages ${startPage}-${endPage} (${direction}). ` +
+            `${missingPages.size} pages missing, ${docsToFetch} docs to fetch`
         );
 
-        // Determine the starting cursor for the fetch
-        let prefetchQuery = baseQuery;
+        let prefetchQuery: Query;
+        let allDocs: DocumentData[];
+        let fetchedFromStart = false;
 
-        if (fetchStartPage > 1) {
-            const beforeFetchCursor = cursorCache.getCursor(mode, fetchStartPage - 1, searchTermNormalized);
+        // Execute backward or forward fetch based on direction
+        let isBackwardFetch = false;
+        if (useBackwardFetch) {
+            // Attempt backward fetch using endBefore + limitToLast
+            const cursorPage = endPage; // Use cursor at endPage for backward fetch
+            const cursorDocId = cursorCache.getCursor(mode, cursorPage, searchTermNormalized);
 
-            if (beforeFetchCursor) {
-                // We have the cursor, use it as anchor
-                const cursorDocRef = doc(playersCollection, beforeFetchCursor);
-                const cursorSnapshot = await getDoc(cursorDocRef);
-                reads += 1;  // Count the getDoc read
-                prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
+            if (cursorDocId) {
+                try {
+                    console.debug(`[Cursor] Using backward fetch with endBefore cursor from page ${cursorPage}`);
+                    const cursorDocRef = doc(playersCollection, cursorDocId);
+                    const cursorSnapshot = await getDoc(cursorDocRef);
+                    reads += 1;
+
+                    prefetchQuery = query(baseQuery, endBefore(cursorSnapshot), limitToLast(docsToFetch));
+                    const snapshot = await getDocs(prefetchQuery);
+                    reads += snapshot.docs.length;
+                    allDocs = snapshot.docs;
+                    isBackwardFetch = true;
+                } catch (error) {
+                    console.warn(`[Cursor] Backward fetch failed, falling back to forward fetch:`, error);
+                    // Fallback to forward fetch
+                    ({ allDocs, reads: reads, fetchedFromStart } = await executeForwardFetch(
+                        baseQuery, startPage, endPage, mode, searchTermNormalized, reads
+                    ));
+                }
             } else {
-                // No cursor available, fetch from beginning up to endPage
-                console.debug(`[Cursor] No cursor for page ${fetchStartPage - 1}, fetching from beginning`);
-                const docsFromStart = endPage * ITEMS_PER_PAGE;
-                prefetchQuery = addPaginationLimitToQuery(baseQuery, docsFromStart + 1);
+                console.debug(`[Cursor] No cursor for page ${cursorPage}, falling back to forward fetch`);
+                // Fallback to forward fetch
+                ({ allDocs, reads: reads, fetchedFromStart } = await executeForwardFetch(
+                    baseQuery, startPage, endPage, mode, searchTermNormalized, reads
+                ));
             }
         } else {
-            // Starting from page 1
-            prefetchQuery = addPaginationLimitToQuery(baseQuery, docsToFetch + 1);
+            // Forward fetch
+            ({ allDocs, reads: reads, fetchedFromStart } = await executeForwardFetch(
+                baseQuery, startPage, endPage, mode, searchTermNormalized, reads
+            ));
         }
 
-        // Fetch the documents
-        const snapshot = await getDocs(prefetchQuery);
-        reads += snapshot.docs.length;
-        const allDocs = snapshot.docs;
-
-        // Determine offset if we fetched from beginning
-        const fetchedFromStart = fetchStartPage > 1 && !cursorCache.getCursor(mode, fetchStartPage - 1, searchTermNormalized);
-        const docOffset = fetchedFromStart ? (fetchStartPage - 1) * ITEMS_PER_PAGE : 0;
-
-        // Cache cursors only for missing pages in the target range
-        for (let i = docOffset; i < allDocs.length; i++) {
-            const pageNumber = Math.floor(i / ITEMS_PER_PAGE) + 1;
+        // Cache cursors for the fetched pages
+        if (isBackwardFetch) {
+            // For backward fetch: documents are in correct order (startPage -> endPage-1)
+            // endBefore excludes the cursor document, so we have pages startPage to endPage-1
+            console.debug(`[Cursor] Caching cursors for backward fetch: ${allDocs.length} docs fetched`);
             
-            // Cache cursor at end of each page within target range, only if missing
-            if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber >= startPage && pageNumber <= endPage) {
-                if (missingPages.has(pageNumber)) {
-                    cursorCache.setCursor(mode, pageNumber, allDocs[i].id, searchTermNormalized);
-                    missingPages.delete(pageNumber); // Mark as filled
+            for (let i = 0; i < allDocs.length; i++) {
+                // Calculate page number: startPage + floor(i / ITEMS_PER_PAGE)
+                const pageNumber = startPage + Math.floor(i / ITEMS_PER_PAGE);
+                
+                // Cache cursor at end of each page
+                if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber <= endPage - 1) {
+                    if (missingPages.has(pageNumber)) {
+                        cursorCache.setCursor(mode, pageNumber, allDocs[i].id, searchTermNormalized);
+                        console.debug(`[Cursor] Cached cursor for page ${pageNumber} (backward fetch)`);
+                        missingPages.delete(pageNumber);
+                    }
                 }
             }
-        }
+        } else {
+            // For forward fetch
+            const docOffset = fetchedFromStart ? (startPage - 1) * ITEMS_PER_PAGE : 0;
 
-        // Also cache cursor for last page if needed
-        if (endPage === totalPages && allDocs.length >= docsToFetch && !cursorCache.getCursor(mode, totalPages, searchTermNormalized)) {
-            const lastDocIndex = Math.min(allDocs.length - 1, docsToFetch - 1);
-            cursorCache.setCursor(mode, totalPages, allDocs[lastDocIndex].id, searchTermNormalized);
+            for (let i = docOffset; i < allDocs.length; i++) {
+                const pageNumber = Math.floor(i / ITEMS_PER_PAGE) + 1;
+                
+                // Cache cursor at end of each page within target range
+                if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber >= startPage && pageNumber <= endPage) {
+                    if (missingPages.has(pageNumber)) {
+                        cursorCache.setCursor(mode, pageNumber, allDocs[i].id, searchTermNormalized);
+                        missingPages.delete(pageNumber);
+                    }
+                }
+            }
         }
 
         // Mark this page range as prefetched
@@ -288,6 +395,56 @@ async function prefetchCursorsAround(
         console.error(`[Cursor] Error prefetching cursors:`, error);
     }
     logFirestoreReads('prefetchCursorsAround', reads);  // Log total reads for this operation
+}
+
+/**
+ * HELPER FUNCTION: Execute forward fetch with cursor-based pagination
+ * 
+ * Returns fetched documents and read count
+ */
+async function executeForwardFetch(
+    baseQuery: Query,
+    startPage: number,
+    endPage: number,
+    mode: RankingCriteria,
+    searchTermNormalized: string | undefined,
+    currentReads: number
+): Promise<{ allDocs: DocumentData[], reads: number, fetchedFromStart: boolean }> {
+    let reads = currentReads;
+    let fetchedFromStart = false;
+    let prefetchQuery: Query;
+
+    const docsToFetch = (endPage - startPage + 1) * ITEMS_PER_PAGE;
+
+    if (startPage > 1) {
+        // Try to use cursor from page before startPage
+        const anchorPage = startPage - 1;
+        const anchorCursorDocId = cursorCache.getCursor(mode, anchorPage, searchTermNormalized);
+
+        if (anchorCursorDocId) {
+            console.debug(`[Cursor] Using forward fetch with startAfter cursor from page ${anchorPage}`);
+            const cursorDocRef = doc(playersCollection, anchorCursorDocId);
+            const cursorSnapshot = await getDoc(cursorDocRef);
+            reads += 1;
+            prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
+        } else {
+            // No cursor available, fetch from beginning
+            console.debug(`[Cursor] No cursor for page ${anchorPage}, fetching from beginning`);
+            fetchedFromStart = true;
+            const docsFromStart = endPage * ITEMS_PER_PAGE;
+            prefetchQuery = query(baseQuery, limit(docsFromStart + 1));
+        }
+    } else {
+        // Starting from page 1
+        console.debug(`[Cursor] Fetching from page 1 (start)`);
+        prefetchQuery = query(baseQuery, limit(docsToFetch + 1));
+    }
+
+    const snapshot = await getDocs(prefetchQuery);
+    reads += snapshot.docs.length;
+    const allDocs = snapshot.docs;
+
+    return { allDocs, reads, fetchedFromStart };
 }
 
 // Main: Fetch page with cursor-based random access
@@ -322,18 +479,23 @@ export async function getPaginatedLeaderboard(
 
         // Step 5: Get cursor for this page (O(1) lookup if prefetched)
         let pageQuery = addPaginationLimitToQuery(baseQuery, ITEMS_PER_PAGE + 1);
+        let fetchedFromStart = false;
 
         if (pageNumber > 1) {
             const cursorDocId = cursorCache.getCursor(mode, pageNumber - 1, searchTermNormalized);
             
-            if (!cursorDocId) {
-                throw new Error(`Cursor not found for page ${pageNumber - 1}. This should not happen after prefetch.`);
+            if (cursorDocId) {
+                const cursorDocRef = doc(playersCollection, cursorDocId);
+                const cursorSnapshot = await getDoc(cursorDocRef);
+                reads += 1;
+                pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
+            } else {
+                console.warn(`[Cursor] Cursor not found for page ${pageNumber - 1}. Falling back to fetch from beginning.`);
+                // Fallback: fetch from beginning (should rarely happen after prefetch)
+                fetchedFromStart = true;
+                const docsFromStart = pageNumber * ITEMS_PER_PAGE;
+                pageQuery = query(baseQuery, limit(docsFromStart + 1));
             }
-            
-            const cursorDocRef = doc(playersCollection, cursorDocId);
-            const cursorSnapshot = await getDoc(cursorDocRef);
-            reads += 1;
-            pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
         }
 
         // Step 6: Execute the page query
@@ -341,11 +503,16 @@ export async function getPaginatedLeaderboard(
         reads += querySnapshot.docs.length;  // Count the getDocs reads
         const allDocs = querySnapshot.docs;
 
-        // Step 7: Get the current page
-        const pageSlice = allDocs.slice(0, ITEMS_PER_PAGE);
+        // Step 7: Get the current page (slice based on whether we fetched from start)
+        const startIdx = fetchedFromStart ? (pageNumber - 1) * ITEMS_PER_PAGE : 0;
+        const endIdx = startIdx + ITEMS_PER_PAGE;
+        const pageSlice = allDocs.slice(startIdx, endIdx);
 
         // Transform documents to Player objects
         const players: Player[] = pageSlice.map(serializePlayer);
+
+        // Step 8: Record page access for navigation direction detection
+        cursorCache.recordPageAccess(mode, pageNumber, searchTermNormalized);
 
         // Step 9: Log cache stats for debugging
         const stats = cursorCache.getStats(mode, searchTermNormalized);
