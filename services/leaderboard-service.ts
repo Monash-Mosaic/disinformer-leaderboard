@@ -347,7 +347,7 @@ export async function getPaginatedLeaderboard(
 }
 
 /**
- * Real-time listener for a specific query page
+ * Real-time listener for a specific query page (not used anywhere)
  * Watches for changes and calls callback whenever data updates
  * 
  * @param baseQuery - The Firestore query to listen to
@@ -402,22 +402,7 @@ export function subscribeToLeaderboardWithPagination(
         : "totalDisinformerPoints";
 
     // Build the base query for real-time listening
-    let q: Query = playersCollection;
-
-    if (searchTermNormalized) {
-        q = query(
-            q,
-            where('username_lowercase', '>=', searchTermNormalized),
-            where('username_lowercase', '<=', searchTermNormalized + '\uf8ff')
-        );
-    }
-
-    q = query(
-        q,
-        orderBy(rankingField, 'desc'),
-        orderBy('totalGamesPlayed', 'asc'),
-        orderBy('username_lowercase', 'asc')
-    );
+    let q: Query = buildBaseQueryWithoutPagination(mode, searchTermNormalized);
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(
