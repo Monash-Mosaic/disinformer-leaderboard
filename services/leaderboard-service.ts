@@ -21,6 +21,14 @@ import { CursorCache, PREFETCH_WINDOW } from "../types/CursorCache";
 const ITEMS_PER_PAGE = 10;
 const cursorCache = new CursorCache();
 
+let totalFirestoreReads = 0;
+
+// Helper to log Firestore read counts for cost estimation
+function logFirestoreReads(operation: string, readCount: number) {
+  totalFirestoreReads += readCount;
+  console.log(`[Firestore Reads] ${operation}: ${readCount} documents read (Total: ${totalFirestoreReads})`);
+}
+
 // TODO: Implement adaptive prefetching based on navigation direction to avoid fetching from beginning (full table fetch)
 
 /**
@@ -125,6 +133,7 @@ async function prefetchLastPageCursor(
     mode: RankingCriteria,
     searchTermNormalized?: string
 ): Promise<void> {
+    let reads = 0;  // Local counter for this function
     try {
         // Check if last page cursor already cached
         if (cursorCache.getCursor(mode, totalPages, searchTermNormalized)) {
@@ -137,6 +146,7 @@ async function prefetchLastPageCursor(
         // Fetch only the last document (efficient, no skip needed)
         const lastPageQuery = query(baseQuery, limitToLast(1));
         const snapshot = await getDocs(lastPageQuery);
+        reads += snapshot.docs.length;  // Count the reads
 
         if (snapshot.docs.length > 0) {
             const lastDoc = snapshot.docs[0];  // The last document in the query
@@ -148,6 +158,7 @@ async function prefetchLastPageCursor(
     } catch (error) {
         console.error(`[Cursor] Error prefetching last page cursor:`, error);
     }
+    logFirestoreReads('prefetchLastPageCursor', reads);  // Log total reads for this operation
 }
 
 /**
@@ -169,6 +180,7 @@ async function prefetchCursorsAround(
     mode: RankingCriteria,
     searchTermNormalized?: string
 ): Promise<void> {
+    let reads = 0;  // Local counter for this function
     try {
         // Check if already prefetched around this page
         if (cursorCache.isPrefetchedAround(mode, currentPage, searchTermNormalized)) {
@@ -196,6 +208,7 @@ async function prefetchCursorsAround(
                 // We have the cursor, use it
                 const cursorDocRef = doc(playersCollection, beforeStartCursor);
                 const cursorSnapshot = await getDoc(cursorDocRef);
+                reads += 1;  // Count the getDoc read
                 prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
             } else {
                 console.debug(`[Cursor] No cursor for page ${startPage - 1}, cannot prefetch around pages ${startPage}-${endPage}`);
@@ -210,6 +223,7 @@ async function prefetchCursorsAround(
 
         // Fetch the documents
         const snapshot = await getDocs(prefetchQuery);
+        reads += snapshot.docs.length;  // Count the getDocs reads
         const allDocs = snapshot.docs;
 
         // Cache cursors for each page in the range
@@ -238,6 +252,7 @@ async function prefetchCursorsAround(
     } catch (error) {
         console.error(`[Cursor] Error prefetching cursors:`, error);
     }
+    logFirestoreReads('prefetchCursorsAround', reads);  // Log total reads for this operation
 }
 
 // Main: Fetch page with cursor-based random access
@@ -246,6 +261,7 @@ export async function getPaginatedLeaderboard(
     mode: RankingCriteria = RankingCriteria.Disinformer,
     searchTerm?: string
 ): Promise<LeaderboardPageResult> {
+    let reads = 0;  // Local counter for this function
     try {
         const searchTermNormalized = searchTerm ? searchTermNormalize(searchTerm) : undefined;
 
@@ -280,6 +296,7 @@ export async function getPaginatedLeaderboard(
                 try {
                     const cursorDocRef = doc(playersCollection, cursorDocId);
                     const cursorSnapshot = await getDoc(cursorDocRef);
+                    reads += 1;  // Count the getDoc read
                     pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
                 } catch (error) {
                     console.warn(`[Cursor] Failed to use cached cursor for page ${pageNumber}, falling back to full fetch from start`);
@@ -295,6 +312,7 @@ export async function getPaginatedLeaderboard(
 
         // Step 6: Execute the page query
         const querySnapshot = await getDocs(pageQuery);
+        reads += querySnapshot.docs.length;  // Count the getDocs reads
         const allDocs = querySnapshot.docs;
 
         // Step 7: Slice to get only the current page (skip docs before current page if needed)
@@ -320,6 +338,8 @@ export async function getPaginatedLeaderboard(
         console.debug(
             `[Leaderboard] Page ${pageNumber} fetched. Cache: ${stats.totalCursors} cursors. TTL: ${Math.round(stats.cacheAge / 1000)}s`
         );
+
+        logFirestoreReads('getPaginatedLeaderboard', reads);  // Log total reads for this operation
 
         return {
             players,
