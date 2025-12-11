@@ -33,8 +33,8 @@ enum NavigationDirection {
 
 // Helper to log Firestore read counts for cost estimation
 function logFirestoreReads(operation: string, readCount: number) {
-  totalFirestoreReads += readCount;
-  console.log(`[Firestore Reads] ${operation}: ${readCount} documents read (Total: ${totalFirestoreReads})`);
+    totalFirestoreReads += readCount;
+    console.log(`[Firestore Reads] ${operation}: ${readCount} documents read (Total: ${totalFirestoreReads})`);
 }
 
 /**
@@ -353,11 +353,11 @@ async function prefetchCursorsAround(
             // For backward fetch: documents are in correct order (startPage -> endPage-1)
             // endBefore excludes the cursor document, so we have pages startPage to endPage-1
             console.debug(`[Cursor] Caching cursors for backward fetch: ${allDocs.length} docs fetched`);
-            
+
             for (let i = 0; i < allDocs.length; i++) {
                 // Calculate page number: startPage + floor(i / ITEMS_PER_PAGE)
                 const pageNumber = startPage + Math.floor(i / ITEMS_PER_PAGE);
-                
+
                 // Cache cursor at end of each page
                 if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber <= endPage - 1) {
                     if (missingPages.has(pageNumber)) {
@@ -373,7 +373,7 @@ async function prefetchCursorsAround(
 
             for (let i = docOffset; i < allDocs.length; i++) {
                 const pageNumber = Math.floor(i / ITEMS_PER_PAGE) + 1;
-                
+
                 // Cache cursor at end of each page within target range
                 if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber >= startPage && pageNumber <= endPage) {
                     if (missingPages.has(pageNumber)) {
@@ -483,12 +483,20 @@ export async function getPaginatedLeaderboard(
 
         if (pageNumber > 1) {
             const cursorDocId = cursorCache.getCursor(mode, pageNumber - 1, searchTermNormalized);
-            
+
             if (cursorDocId) {
                 const cursorDocRef = doc(playersCollection, cursorDocId);
                 const cursorSnapshot = await getDoc(cursorDocRef);
                 reads += 1;
-                pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
+                if (cursorSnapshot.exists()) {
+                    pageQuery = query(baseQuery, startAfter(cursorSnapshot), limit(ITEMS_PER_PAGE + 1));
+                } else {
+                    console.warn(`[Cursor] Cursor document ${cursorDocId} does not exist. Falling back to fetch from beginning.`);
+                    // Fallback: fetch from beginning
+                    fetchedFromStart = true;
+                    const docsFromStart = pageNumber * ITEMS_PER_PAGE;
+                    pageQuery = query(baseQuery, limit(docsFromStart + 1));
+                }
             } else {
                 console.warn(`[Cursor] Cursor not found for page ${pageNumber - 1}. Falling back to fetch from beginning.`);
                 // Fallback: fetch from beginning (should rarely happen after prefetch)
