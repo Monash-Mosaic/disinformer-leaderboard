@@ -35,6 +35,7 @@ export default function LeaderboardSkeleton() {
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Place</th>
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Username</th>
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Points</th>
+                            <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Games</th>
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">IFRC Society</th>
                             <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">Branch</th>
                         </tr>
@@ -47,6 +48,9 @@ export default function LeaderboardSkeleton() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="h-8 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse"></div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="h-6 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse"></div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="h-6 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse"></div>

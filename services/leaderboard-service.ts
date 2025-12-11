@@ -552,38 +552,6 @@ export async function getPaginatedLeaderboard(
 }
 
 /**
- * Real-time listener for a specific query page (not used anywhere)
- * Watches for changes and calls callback whenever data updates
- * 
- * @param baseQuery - The Firestore query to listen to
- * @param onUpdate - Callback when data updates
- * @param onError - Callback when error occurs
- * @returns Unsubscribe function to stop listening
- */
-export function subscribeToLeaderboardPage(
-    baseQuery: Query,
-    onUpdate: (players: Player[]) => void,
-    onError: (error: Error) => void
-): () => void {
-    const unsubscribe = onSnapshot(
-        baseQuery,
-        (snapshot) => {
-            try {
-                const players: Player[] = snapshot.docs.map(serializePlayer);
-                onUpdate(players);
-            } catch (error) {
-                onError(error instanceof Error ? error : new Error('Failed to process snapshot'));
-            }
-        },
-        (error) => {
-            onError(new Error(`Snapshot listener error: ${error.message}`));
-        }
-    );
-
-    return unsubscribe;
-}
-
-/**
  * Real-time listener for entire leaderboard with pagination
  * Rebuilds page data when any player changes
  * 

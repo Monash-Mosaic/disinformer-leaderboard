@@ -251,6 +251,9 @@ export default function LeaderboardTableCursorBased({
                                             Points
                                         </th>
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
+                                            Games
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
                                             IFRC Society
                                         </th>
                                         <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
@@ -278,6 +281,9 @@ export default function LeaderboardTableCursorBased({
                                                 {mode === RankingCriteria.Disinformer
                                                     ? player.totalDisinformerPoints
                                                     : player.totalNetizenPoints}
+                                            </td>
+                                            <td className="px-6 py-4 text-zinc-900 dark:text-white font-semibold">
+                                                {player.totalGamesPlayed}
                                             </td>
                                             <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
                                                 {player.society || "N/A"}
