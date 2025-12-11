@@ -553,7 +553,7 @@ export async function getPaginatedLeaderboard(
 
 /**
  * Real-time listener for entire leaderboard with pagination
- * Rebuilds page data when any player changes
+ * Uses cursor-based pagination to stay consistent with getPaginatedLeaderboard
  * 
  * @param pageNumber - Current page number
  * @param mode - Ranking criteria (Disinformer or Netizen)
@@ -570,22 +570,33 @@ export function subscribeToLeaderboardWithPagination(
     searchTerm?: string
 ): () => void {
     const searchTermNormalized = searchTerm ? searchTermNormalize(searchTerm) : undefined;
-    const rankingField = mode === RankingCriteria.Netizen
-        ? "totalNetizenPoints"
-        : "totalDisinformerPoints";
 
     // Build the base query for real-time listening
     let q: Query = buildBaseQueryWithoutPagination(mode, searchTermNormalized);
 
-    // Set up real-time listener
+    // Set up real-time listener on the base query (no pagination limit)
+    // This triggers whenever ANY player document changes
     const unsubscribe = onSnapshot(
         q,
-        (snapshot) => {
+        async (snapshot) => {
             try {
+                // Get total count from the snapshot
                 const allPlayers = snapshot.docs.map(serializePlayer);
-                const totalPages = Math.ceil(allPlayers.length / ITEMS_PER_PAGE) || 1;
+                const totalPlayers = allPlayers.length;
+                const totalPages = Math.ceil(totalPlayers / ITEMS_PER_PAGE) || 1;
                 const validPageNumber = Math.min(pageNumber, totalPages);
 
+                // Update cursor cache with all current positions for consistency
+                // This ensures subsequent cursor-based fetches are consistent
+                snapshot.docs.forEach((doc, index) => {
+                    const pageForDoc = Math.floor(index / ITEMS_PER_PAGE) + 1;
+                    if (index % ITEMS_PER_PAGE === ITEMS_PER_PAGE - 1) {
+                        // Store the cursor at page boundaries
+                        cursorCache.setCursor(mode, pageForDoc, doc.id, searchTermNormalized);
+                    }
+                });
+
+                // Get the page slice from the current snapshot
                 const startIdx = (validPageNumber - 1) * ITEMS_PER_PAGE;
                 const endIdx = startIdx + ITEMS_PER_PAGE;
                 const pageSlice = allPlayers.slice(startIdx, endIdx);
