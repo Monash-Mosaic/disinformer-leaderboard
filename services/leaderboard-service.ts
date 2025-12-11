@@ -166,12 +166,14 @@ async function prefetchLastPageCursor(
  *
  * Strategy:
  * - Fetch window of pages: [currentPage - PREFETCH_WINDOW] to [currentPage + PREFETCH_WINDOW]
- * - For last page access, jump directly to last page if needed
+ * - Skip pages that already have cached cursors
+ * - Intelligently fill gaps in the cache to minimize fetches
  * - Cache cursor at end of each page in the window
  * - Mark this page range as prefetched to avoid re-fetching
  *
- * Cost per prefetch: ~70 document reads (7 pages * 10 docs)
- * Benefit: Covers most user navigation patterns
+ * Optimization: Only fetches missing cursors, skips already-cached ones
+ * Cost per prefetch: Variable based on cache gaps (~10-70 document reads)
+ * Benefit: Covers most user navigation patterns with minimal refetching
  */
 async function prefetchCursorsAround(
     baseQuery: Query,
@@ -191,29 +193,54 @@ async function prefetchCursorsAround(
         // Calculate the range to prefetch
         const startPage = Math.max(1, currentPage - PREFETCH_WINDOW);
         const endPage = Math.min(totalPages, currentPage + PREFETCH_WINDOW);
-        const docsToFetch = (endPage - startPage + 1) * ITEMS_PER_PAGE;
+
+        // Identify gaps in cache: pages that need cursors
+        const missingPages = new Set<number>();
+        for (let page = startPage; page <= endPage; page++) {
+            if (!cursorCache.getCursor(mode, page, searchTermNormalized)) {
+                missingPages.add(page);
+            }
+        }
+
+        // If all cursors are already cached, just mark as prefetched and return
+        if (missingPages.size === 0) {
+            console.debug(`[Cursor] All cursors for pages ${startPage}-${endPage} already cached. Skipping fetch.`);
+            cursorCache.markPrefetchedAround(mode, currentPage, searchTermNormalized);
+            return;
+        }
+
+        // Find optimal fetch range: start from first missing page or earlier cached page
+        let fetchStartPage = Math.min(...Array.from(missingPages));
+        const cachedPageBefore = fetchStartPage - 1;
+        
+        // If we have a cached cursor before the gap, use it as anchor
+        const hasCachedAnchor = cachedPageBefore >= 1 && cursorCache.getCursor(mode, cachedPageBefore, searchTermNormalized);
+        if (hasCachedAnchor) {
+            fetchStartPage = cachedPageBefore;
+        }
+
+        const docsToFetch = (endPage - fetchStartPage + 1) * ITEMS_PER_PAGE;
 
         console.debug(
-            `[Cursor] Prefetching cursors for pages ${startPage}-${endPage} (${docsToFetch} docs)`
+            `[Cursor] Prefetching missing cursors for pages ${startPage}-${endPage}. ` +
+            `Fetching from page ${fetchStartPage} (${missingPages.size} pages missing, ${docsToFetch} docs)`
         );
 
-        // Determine the starting cursor
+        // Determine the starting cursor for the fetch
         let prefetchQuery = baseQuery;
 
-        if (startPage > 1) {
-            // Get cursor for page before start (to use startAfter)
-            const beforeStartCursor = cursorCache.getCursor(mode, startPage - 1, searchTermNormalized);
+        if (fetchStartPage > 1) {
+            const beforeFetchCursor = cursorCache.getCursor(mode, fetchStartPage - 1, searchTermNormalized);
 
-            if (beforeStartCursor) {
-                // We have the cursor, use it
-                const cursorDocRef = doc(playersCollection, beforeStartCursor);
+            if (beforeFetchCursor) {
+                // We have the cursor, use it as anchor
+                const cursorDocRef = doc(playersCollection, beforeFetchCursor);
                 const cursorSnapshot = await getDoc(cursorDocRef);
                 reads += 1;  // Count the getDoc read
                 prefetchQuery = query(baseQuery, startAfter(cursorSnapshot), limit(docsToFetch + 1));
             } else {
-                // FALLBACK: No cursor available, fetch from beginning
-                console.debug(`[Cursor] No cursor for page ${startPage - 1}, falling back to fetch from beginning`);
-                // Fetch from start up to endPage to cache all cursors in range
+                // No cursor available, fetch from beginning up to endPage
+                console.debug(`[Cursor] No cursor for page ${fetchStartPage - 1}, fetching from beginning`);
                 const docsFromStart = endPage * ITEMS_PER_PAGE;
                 prefetchQuery = addPaginationLimitToQuery(baseQuery, docsFromStart + 1);
             }
@@ -228,21 +255,24 @@ async function prefetchCursorsAround(
         const allDocs = snapshot.docs;
 
         // Determine offset if we fetched from beginning
-        const fetchedFromStart = startPage > 1 && !cursorCache.getCursor(mode, startPage - 1, searchTermNormalized);
-        const docOffset = fetchedFromStart ? (startPage - 1) * ITEMS_PER_PAGE : 0;
+        const fetchedFromStart = fetchStartPage > 1 && !cursorCache.getCursor(mode, fetchStartPage - 1, searchTermNormalized);
+        const docOffset = fetchedFromStart ? (fetchStartPage - 1) * ITEMS_PER_PAGE : 0;
 
-        // Cache cursors for each page in the range
+        // Cache cursors only for missing pages in the target range
         for (let i = docOffset; i < allDocs.length; i++) {
             const pageNumber = Math.floor(i / ITEMS_PER_PAGE) + 1;
             
-            // Cache cursor at end of each page within range
+            // Cache cursor at end of each page within target range, only if missing
             if ((i + 1) % ITEMS_PER_PAGE === 0 && pageNumber >= startPage && pageNumber <= endPage) {
-                cursorCache.setCursor(mode, pageNumber, allDocs[i].id, searchTermNormalized);
+                if (missingPages.has(pageNumber)) {
+                    cursorCache.setCursor(mode, pageNumber, allDocs[i].id, searchTermNormalized);
+                    missingPages.delete(pageNumber); // Mark as filled
+                }
             }
         }
 
-        // Also prefetch cursor for last page (useful for pagination info)
-        if (endPage === totalPages && allDocs.length >= docsToFetch) {
+        // Also cache cursor for last page if needed
+        if (endPage === totalPages && allDocs.length >= docsToFetch && !cursorCache.getCursor(mode, totalPages, searchTermNormalized)) {
             const lastDocIndex = Math.min(allDocs.length - 1, docsToFetch - 1);
             cursorCache.setCursor(mode, totalPages, allDocs[lastDocIndex].id, searchTermNormalized);
         }
@@ -252,7 +282,7 @@ async function prefetchCursorsAround(
 
         const stats = cursorCache.getStats(mode, searchTermNormalized);
         console.debug(
-            `[Cursor] Prefetch complete: ${stats.totalCursors} cursors cached`
+            `[Cursor] Prefetch complete: ${stats.totalCursors} cursors cached (${missingPages.size} pages still missing)`
         );
     } catch (error) {
         console.error(`[Cursor] Error prefetching cursors:`, error);
