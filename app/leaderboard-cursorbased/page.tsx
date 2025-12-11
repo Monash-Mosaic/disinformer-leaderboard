@@ -57,8 +57,6 @@ export default async function LeaderboardCursorBased({
                         initialPage={page}
                         initialMode={mode}
                         initialSearch={search}
-                        // Disable realtime updates to save Firestore reads for now
-                        enableRealtime={false}
                     />
                 </Suspense>
             </div>
