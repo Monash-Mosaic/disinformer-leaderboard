@@ -209,6 +209,8 @@ async function prefetchLastPageCursor(
     logFirestoreReads('prefetchLastPageCursor', reads);  // Log total reads for this operation
 }
 
+// TODO: Fetching in the middle currently using forward fetch only
+// should use bi-directional fetch (forward + backward) for better efficiency, avoid cursor cached misses
 /**
  * HELPER FUNCTION: Prefetch cursors around current page with adaptive direction-aware strategy
  *
