@@ -551,6 +551,12 @@ export async function getPaginatedLeaderboard(
     }
 }
 
+
+// TODO: Optimize real-time listener
+// Idea: Real-time listener for current page instead of entire leaderboard
+
+// TODO: Optimize getPaginatedLeaderboard or PrefetchCursorsAround, avoid full fetchs from beginning when cursors missing
+
 /**
  * Real-time listener for entire leaderboard with pagination
  * Uses cursor-based pagination to stay consistent with getPaginatedLeaderboard
