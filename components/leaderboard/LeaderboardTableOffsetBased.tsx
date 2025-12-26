@@ -1,31 +1,30 @@
 "use client";
 
-import { use, useState, useTransition, useEffect } from "react";
+import { use, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPaginatedLeaderboard, subscribeToLeaderboardWithPagination } from "@/services/leaderboard-cursor-service";
 import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
+import { fetchLeaderboardAction } from "@/app/leaderboard-offsetbased/actions";
 import LeaderboardSearchBar from "./LeaderboardSearchBar";
-import LeaderboardPagination from "./LeaderboardPagination";
 import LeaderboardToggleButton from "./LeaderboardToggleButton";
+import LeaderboardPagination from "./LeaderboardPagination";
 
 /**
- * Props for LeaderboardTableCursorBased component
+ * Props for LeaderboardTableOffsetBased component
  * These are passed from the Server Component and represent URL state
  */
-interface LeaderboardTableCursorBasedProps {
+interface LeaderboardTableOffsetBasedProps {
     dataPromise: Promise<LeaderboardPageResult>;  // Server-fetched data promise
     initialPage: number;           // Starting page number from URL
     initialMode: RankingCriteria;  // Initial ranking mode from URL
     initialSearch: string;         // Initial search term from URL
-    enableRealtime?: boolean;      // Enable real-time updates (default: true)
 }
 
 /**
- * LeaderboardTableCursorBased Client Component
+ * LeaderboardTableOffsetBased Client Component
  *
- * This component implements cursor-based pagination using the leaderboard-service.ts.
- * Features efficient random access pagination with cursor caching.
+ * This component implements offset-based pagination using the leaderboard-offset-service.ts.
+ * Features simpler pagination compared to cursor-based, but less efficient for large page numbers.
  *
  * Architecture:
  * - Server fetches initial data as a promise
@@ -34,19 +33,24 @@ interface LeaderboardTableCursorBasedProps {
  * - URL state synchronized for shareable links
  *
  * Key Features:
- * - Cursor-based pagination for Firestore efficiency
- * - Random access to any page (no sequential navigation required)
+ * - Offset-based pagination (simpler implementation)
  * - Search filtering with dynamic pagination updates
  * - URL state synchronization for shareable links
- * - Cursor caching for instant navigation between pages
+ * - Server-side pagination (no real-time updates)
+ *
+ * Trade-offs vs Cursor-based:
+ * + Simpler to understand and maintain
+ * + No cursor caching complexity
+ * - Less efficient for large page numbers
+ * - Fetches more documents as page number increases
+ * - No real-time updates (would require polling)
  */
-export default function LeaderboardTableCursorBased({
+export default function LeaderboardTableOffsetBased({
     dataPromise,
     initialPage,
     initialMode,
     initialSearch,
-    enableRealtime = true,
-}: LeaderboardTableCursorBasedProps) {
+}: LeaderboardTableOffsetBasedProps) {
     // Use the "use" hook to resolve the server-fetched data promise
     const initialData = use(dataPromise);
 
@@ -66,52 +70,11 @@ export default function LeaderboardTableCursorBased({
     const [searchTerm, setSearchTerm] = useState(initialSearch);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Real-time subscription state
-    const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
-    const [isRealtime, setIsRealtime] = useState(false);
-
-    // Set up real-time listener on mount and when dependencies change
-    useEffect(() => {
-        if (!enableRealtime) return;
-
-        console.log('[Realtime] Setting up listener for page', currentPage, 'mode', mode);
-
-        // Subscribe to real-time updates
-        const unsub = subscribeToLeaderboardWithPagination(
-            currentPage,
-            mode,
-            (result) => {
-                console.log('[Realtime] Data updated:', result);
-                setData(result);
-            },
-            (err) => {
-                console.error('[Realtime] Error:', err);
-                setError(err.message);
-            },
-            searchTerm || undefined
-        );
-
-        setUnsubscribe(() => unsub);
-        setIsRealtime(true);
-
-        return () => {
-            console.log('[Realtime] Unsubscribing listener');
-            unsub();
-            setIsRealtime(false);
-        };
-    }, [currentPage, mode, searchTerm, enableRealtime]);
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-        };
-    }, [unsubscribe]);
+    // Real-time subscription state - not applicable with firebase-admin
+    // Offset-based pagination is server-based, so real-time updates would require polling
 
     /**
-     * Fetches leaderboard data on the client side
+     * Fetches leaderboard data on the client side using Server Action
      * Used for subsequent navigations after initial server fetch
      */
     const fetchLeaderboardData = async (page: number, rankMode: RankingCriteria, search: string) => {
@@ -119,7 +82,7 @@ export default function LeaderboardTableCursorBased({
         setError(null);
 
         try {
-            const result = await getPaginatedLeaderboard(page, rankMode, search);
+            const result = await fetchLeaderboardAction(page, rankMode, search);
             setData(result);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
@@ -154,7 +117,7 @@ export default function LeaderboardTableCursorBased({
 
         // Use startTransition for non-blocking navigation
         startTransition(() => {
-            router.push(`/leaderboard-cursorbased?${params.toString()}`, { scroll: false });
+            router.push(`/leaderboard-offsetbased?${params.toString()}`, { scroll: false });
         });
     };
 
@@ -207,8 +170,8 @@ export default function LeaderboardTableCursorBased({
         ? 'Switch to Netizen Mode'
         : 'Switch to Disinformer Mode';
     const title = mode === RankingCriteria.Disinformer
-        ? 'Disinformer Leaderboard (Cursor-Based)'
-        : 'Netizen Leaderboard (Cursor-Based)';
+        ? 'Disinformer Leaderboard (Offset-Based)'
+        : 'Netizen Leaderboard (Offset-Based)';
 
     const loading = isLoading || isPending;
 

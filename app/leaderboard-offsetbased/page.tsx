@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
-import LeaderboardTableCursorBased from '@/components/leaderboard/LeaderboardTableCursorBased';
-import { getPaginatedLeaderboard } from '@/services/leaderboard-cursor-service';
+import LeaderboardTableOffsetBased from '@/components/leaderboard/LeaderboardTableOffsetBased';
+import { getPaginatedLeaderboard } from '@/services/leaderboard-offset-service';
 
 /**
  * Interface for URL search parameters used in leaderboard navigation
@@ -15,21 +15,31 @@ interface SearchParams {
 }
 
 /**
- * Cursor-Based Leaderboard Server Component
+ * Offset-Based Leaderboard Server Component
  *
- * This route demonstrates cursor-based pagination with random access.
- * Uses the leaderboard-service.ts implementation with cursor caching.
+ * This route demonstrates offset-based pagination.
+ * Uses the leaderboard-offset-service.ts implementation.
  *
  * Features:
- * - Cursor-based pagination for efficient Firestore queries
- * - Random access to any page (jump from page 1 to page 10)
+ * - Offset-based pagination (simpler than cursor-based)
  * - Search filtering with dynamic pagination updates
  * - URL state preservation for shareable links
  * - Data fetched on server, passed to client component via promise
  *
+ * Trade-offs:
+ * + Simpler implementation than cursor-based
+ * + No cursor caching complexity
+ * - Less efficient for large page numbers (fetches all docs up to current page)
+ * - Higher Firestore read costs for pages further in the list
+ *
+ * Best for:
+ * - Small to medium datasets
+ * - Use cases where users typically stay on first few pages
+ * - Situations where simplicity is preferred over optimization
+ *
  * @param searchParams - Promise containing URL parameters (Next.js 15+ pattern)
  */
-export default async function LeaderboardCursorBased({
+export default async function LeaderboardOffsetBased({
     searchParams,
 }: {
     searchParams: Promise<SearchParams>;
@@ -52,7 +62,7 @@ export default async function LeaderboardCursorBased({
                 {/* Suspense boundary provides loading state while fetching data */}
                 {/* Shows skeleton UI during initial load and navigation */}
                 <Suspense fallback={<LeaderboardSkeleton />}>
-                    <LeaderboardTableCursorBased
+                    <LeaderboardTableOffsetBased
                         dataPromise={dataPromise}
                         initialPage={page}
                         initialMode={mode}

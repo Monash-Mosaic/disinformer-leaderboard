@@ -49,6 +49,15 @@ export default function Navbar() {
                         >
                             Leaderboard (Cursor-Based)
                         </Link>
+                        <Link
+                            href="/leaderboard-offsetbased"
+                            className={`transition-colors font-medium ${isActive('/leaderboard-offsetbased')
+                                ? 'text-cyan-500 dark:text-cyan-400'
+                                : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                        >
+                            Leaderboard (Offset-Based)
+                        </Link>
                     </div>
 
                     {/* Right side (placeholder for user menu or other items) */}
