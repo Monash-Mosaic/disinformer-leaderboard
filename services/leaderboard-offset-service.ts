@@ -93,11 +93,15 @@ export async function getPaginatedLeaderboard(
 
         // Calculate pagination metadata
         const totalPages = Math.ceil(totalDocuments / PAGE_SIZE);
-        const hasNextPage = normalizedPage < totalPages;
-        const hasPrevPage = normalizedPage > 1;
+
+        // Adjust page if it exceeds total pages (can happen with real-time updates)
+        const validPage = Math.min(normalizedPage, Math.max(1, totalPages));
+
+        const hasNextPage = validPage < totalPages;
+        const hasPrevPage = validPage > 1;
 
         // Calculate offset (skip)
-        const pageOffset = (normalizedPage - 1) * PAGE_SIZE;
+        const pageOffset = (validPage - 1) * PAGE_SIZE;
 
         // Fetch this page's data with offset + limit
         // Using firebase-admin SDK which supports .offset()
@@ -127,7 +131,7 @@ export async function getPaginatedLeaderboard(
         return {
             players,
             totalPages,
-            currentPage: normalizedPage,
+            currentPage: validPage,
             hasNextPage,
             hasPrevPage,
             cursors: {}, // Offset-based doesn't use cursors

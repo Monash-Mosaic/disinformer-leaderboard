@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useState, useTransition } from "react";
+import { use, useState, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
 import { fetchLeaderboardAction } from "@/app/leaderboard-offsetbased/actions";
+import { subscribeToLeaderboardChanges } from "@/services/leaderboard-offset-realtime-service";
 import LeaderboardSearchBar from "./LeaderboardSearchBar";
 import LeaderboardToggleButton from "./LeaderboardToggleButton";
 import LeaderboardPagination from "./LeaderboardPagination";
@@ -18,38 +19,42 @@ interface LeaderboardTableOffsetBasedProps {
     initialPage: number;           // Starting page number from URL
     initialMode: RankingCriteria;  // Initial ranking mode from URL
     initialSearch: string;         // Initial search term from URL
+    enableRealtime?: boolean;      // Enable real-time updates (default: true)
 }
 
 /**
  * LeaderboardTableOffsetBased Client Component
  *
- * This component implements offset-based pagination using the leaderboard-offset-service.ts.
- * Features simpler pagination compared to cursor-based, but less efficient for large page numbers.
+ * This component implements offset-based pagination with real-time updates using the hybrid approach.
+ * Combines server-side initial data fetching with client-side real-time subscriptions.
  *
  * Architecture:
- * - Server fetches initial data as a promise
+ * - Server fetches initial data as a promise (server-side rendering benefits)
  * - Client component uses React's "use" hook to resolve the promise
- * - Handles subsequent page changes, mode switches, and searches with client-side re-fetching
+ * - Real-time updates via Firebase client SDK listener
+ * - When leaderboard changes, re-fetches current page using server action
  * - URL state synchronized for shareable links
  *
  * Key Features:
  * - Offset-based pagination (simpler implementation)
+ * - Real-time updates without full client-side processing
  * - Search filtering with dynamic pagination updates
  * - URL state synchronization for shareable links
- * - Server-side pagination (no real-time updates)
+ * - Hybrid approach: server actions + client real-time
  *
  * Trade-offs vs Cursor-based:
  * + Simpler to understand and maintain
  * + No cursor caching complexity
  * - Less efficient for large page numbers
  * - Fetches more documents as page number increases
- * - No real-time updates (would require polling)
+ * + Real-time updates with server-side consistency
  */
 export default function LeaderboardTableOffsetBased({
     dataPromise,
     initialPage,
     initialMode,
     initialSearch,
+    enableRealtime = true,
 }: LeaderboardTableOffsetBasedProps) {
     // Use the "use" hook to resolve the server-fetched data promise
     const initialData = use(dataPromise);
@@ -70,24 +75,69 @@ export default function LeaderboardTableOffsetBased({
     const [searchTerm, setSearchTerm] = useState(initialSearch);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Real-time subscription state - not applicable with firebase-admin
-    // Offset-based pagination is server-based, so real-time updates would require polling
+
+    /**
+     * Handles real-time leaderboard updates
+     * When the leaderboard changes, re-fetch the current page data silently
+     */
+    const handleLeaderboardChange = () => {
+        if (enableRealtime) {
+            fetchLeaderboardData(currentPage, mode, searchTerm, true); // Silent update
+        }
+    };
+
+    /**
+     * Handles real-time subscription errors
+     */
+    const handleRealtimeError = (error: Error) => {
+        console.error('Real-time subscription error:', error);
+        // Could show a toast notification here, but for now just log
+        // Optionally disable real-time if there are persistent errors
+    };
+
+    // Set up real-time subscription
+    useEffect(() => {
+        if (!enableRealtime) return;
+
+        const unsubscribe = subscribeToLeaderboardChanges(
+            mode,
+            searchTerm,
+            handleLeaderboardChange,
+            handleRealtimeError
+        );
+
+        return () => {
+            unsubscribe();
+        };
+    }, [mode, searchTerm, enableRealtime]);
 
     /**
      * Fetches leaderboard data on the client side using Server Action
      * Used for subsequent navigations after initial server fetch
      */
-    const fetchLeaderboardData = async (page: number, rankMode: RankingCriteria, search: string) => {
-        setIsLoading(true);
+    const fetchLeaderboardData = async (page: number, rankMode: RankingCriteria, search: string, silent = false) => {
+        if (!silent) {
+            setIsLoading(true);
+        }
         setError(null);
 
         try {
             const result = await fetchLeaderboardAction(page, rankMode, search);
             setData(result);
+
+            // Sync component state with server response (important for real-time updates)
+            // If the server adjusted the page (e.g., due to total pages change), update local state
+            if (result.currentPage !== currentPage) {
+                setCurrentPage(result.currentPage);
+                // Update URL to reflect the corrected page
+                updateURL(result.currentPage, rankMode, search);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
         } finally {
-            setIsLoading(false);
+            if (!silent) {
+                setIsLoading(false);
+            }
         }
     };
 

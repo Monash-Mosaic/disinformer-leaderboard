@@ -68,7 +68,6 @@ export default function LeaderboardTableCursorBased({
 
     // Real-time subscription state
     const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
-    const [isRealtime, setIsRealtime] = useState(false);
 
     // Set up real-time listener on mount and when dependencies change
     useEffect(() => {
@@ -92,12 +91,10 @@ export default function LeaderboardTableCursorBased({
         );
 
         setUnsubscribe(() => unsub);
-        setIsRealtime(true);
 
         return () => {
             console.log('[Realtime] Unsubscribing listener');
             unsub();
-            setIsRealtime(false);
         };
     }, [currentPage, mode, searchTerm, enableRealtime]);
 

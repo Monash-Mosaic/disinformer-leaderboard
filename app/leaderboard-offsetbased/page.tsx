@@ -15,27 +15,31 @@ interface SearchParams {
 }
 
 /**
- * Offset-Based Leaderboard Server Component
+ * Offset-Based Leaderboard Server Component with Real-Time Updates
  *
- * This route demonstrates offset-based pagination.
- * Uses the leaderboard-offset-service.ts implementation.
+ * This route demonstrates offset-based pagination with hybrid real-time updates.
+ * Uses the leaderboard-offset-service.ts for initial server-side data fetching
+ * and client-side Firebase SDK for real-time subscriptions.
  *
  * Features:
  * - Offset-based pagination (simpler than cursor-based)
+ * - Hybrid real-time updates: server actions for data + client listeners for change detection
  * - Search filtering with dynamic pagination updates
  * - URL state preservation for shareable links
- * - Data fetched on server, passed to client component via promise
+ * - Server-side rendering benefits maintained
  *
  * Trade-offs:
  * + Simpler implementation than cursor-based
  * + No cursor caching complexity
+ * + Real-time updates without full client processing
  * - Less efficient for large page numbers (fetches all docs up to current page)
  * - Higher Firestore read costs for pages further in the list
+ * - Client-side Firebase SDK required
  *
  * Best for:
  * - Small to medium datasets
  * - Use cases where users typically stay on first few pages
- * - Situations where simplicity is preferred over optimization
+ * - Situations where real-time updates are important but server consistency is maintained
  *
  * @param searchParams - Promise containing URL parameters (Next.js 15+ pattern)
  */
