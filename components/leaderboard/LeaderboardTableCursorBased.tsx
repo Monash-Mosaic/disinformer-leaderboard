@@ -199,22 +199,24 @@ export default function LeaderboardTableCursorBased({
         fetchLeaderboardData(page, mode, searchTerm);
     };
 
-    // Dynamic UI text based on current mode
-    const buttonText = mode === RankingCriteria.Disinformer
-        ? 'Switch to Netizen Mode'
-        : 'Switch to Disinformer Mode';
-    const title = mode === RankingCriteria.Disinformer
-        ? 'Disinformer Leaderboard (Cursor-Based)'
-        : 'Netizen Leaderboard (Cursor-Based)';
-
     const loading = isLoading || isPending;
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans py-8 px-4">
-            <div className="max-w-6xl mx-auto">
-                <h1 className="text-4xl font-bold text-center mb-8 text-zinc-900 dark:text-white">
-                    {title}
+        <div className="py-8">
+            <div className="max-w-[1300px] mx-auto">
+                <h1 
+                    className={`text-[72px] font-['Luckiest_Guy'] text-center mb-8 ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                    style={{ letterSpacing: '0.72px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', lineHeight: '1.4' }}
+                >
+                    {mode === RankingCriteria.Netizen ? 'Netizen Leaderboards' : 'Disinformer Leaderboards'}
                 </h1>
+
+                <LeaderboardToggleButton
+                    onClick={handleModeToggle}
+                    disabled={loading}
+                    text=""
+                    mode={mode === RankingCriteria.Disinformer ? 'disinformer' : 'netizen'}
+                />
 
                 <LeaderboardSearchBar
                     inputValue={inputValue}
@@ -223,75 +225,144 @@ export default function LeaderboardTableCursorBased({
                     disabled={loading}
                 />
 
-                <LeaderboardToggleButton
-                    onClick={handleModeToggle}
-                    disabled={loading}
-                    text={buttonText}
-                />
-
                 {error ? (
                     <p className="text-red-500 text-center">{error}</p>
                 ) : data ? (
                     <>
-                        {/* Leaderboard Table */}
-                        <div className="overflow-x-auto bg-white dark:bg-zinc-900 rounded-lg shadow">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800">
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Place
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Username
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Points
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Games
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            IFRC Society
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-zinc-700 dark:text-zinc-300 font-semibold">
-                                            Branch
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.players.map((player, index) => (
-                                        <tr
-                                            key={player.id}
-                                            className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <span className="text-lg font-bold text-zinc-900 dark:text-white">
-                                                    {(data.currentPage - 1) * 10 + index + 1}
+                        {/* Table Headers */}
+                        <div className="grid grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-4 mb-4 px-4">
+                            <div 
+                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
+                            >
+                                Place
+                            </div>
+                            <div 
+                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
+                            >
+                                Username
+                            </div>
+                            <div 
+                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
+                            >
+                                Points
+                            </div>
+                            <div 
+                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
+                            >
+                                IFRC Societies
+                            </div>
+                            <div 
+                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
+                            >
+                                Branches
+                            </div>
+                        </div>
+
+                        {/* Leaderboard Rows */}
+                        <div className="space-y-3">
+                            {data.players.map((player, index) => {
+                                const globalRank = (data.currentPage - 1) * 10 + index + 1;
+                                
+                                // Determine row background color based on rank
+                                let bgColor = mode === RankingCriteria.Netizen ? 'bg-[#ff4805]/50' : 'bg-[#4ecaca]/50'; // Default based on mode
+                                if (globalRank === 1) bgColor = 'bg-[#ffd700]'; // Gold
+                                else if (globalRank === 2) bgColor = 'bg-[#c4c4c4]'; // Silver
+                                else if (globalRank === 3) bgColor = 'bg-[#e5a01d]'; // Bronze
+                                
+                                const points = mode === RankingCriteria.Disinformer
+                                    ? player.totalDisinformerPoints
+                                    : player.totalNetizenPoints;
+                                
+                                return (
+                                    <div 
+                                        key={player.id}
+                                        className={`${bgColor} rounded-[20px] grid grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-4 items-center px-4 py-5`}
+                                    >
+                                        {/* Place with medal badge for top 3 */}
+                                        <div className="flex justify-center items-center">
+                                            {globalRank <= 3 ? (
+                                                <div className="relative">
+                                                    {/* Medal wings */}
+                                                    <div className="absolute top-[25px] left-0 w-[19px] h-[25px]">
+                                                        <img 
+                                                            src={"/assets/medal-wing-left.png"} 
+                                                            alt="" 
+                                                            className="w-full h-full"
+                                                        />
+                                                    </div>
+                                                    <div className="absolute top-[25px] right-0 w-[19px] h-[25px]">
+                                                        <img 
+                                                            src={"/assets/medal-wing-right.png"} 
+                                                            alt="" 
+                                                            className="w-full h-full"
+                                                        />
+                                                    </div>
+                                                    <div className={`w-10 h-10 rounded-full border-2 border-black flex items-center justify-center ${bgColor} relative z-10`}>
+                                                        <span 
+                                                            className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                            style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                                        >
+                                                            {globalRank}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span 
+                                                    className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                    style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                                >
+                                                    {globalRank}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-block bg-cyan-400 text-zinc-900 px-4 py-2 rounded-lg font-medium">
-                                                    {player.username}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-zinc-900 dark:text-white font-semibold">
-                                                {mode === RankingCriteria.Disinformer
-                                                    ? player.totalDisinformerPoints
-                                                    : player.totalNetizenPoints}
-                                            </td>
-                                            <td className="px-6 py-4 text-zinc-900 dark:text-white font-semibold">
-                                                {player.totalGamesPlayed}
-                                            </td>
-                                            <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
+                                            )}
+                                        </div>
+                                        
+                                        {/* Username */}
+                                        <div className="text-center">
+                                            <span 
+                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                            >
+                                                {player.username}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Points */}
+                                        <div className="text-center">
+                                            <span 
+                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                            >
+                                                {points}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* IFRC Society */}
+                                        <div className="text-center">
+                                            <span 
+                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                            >
                                                 {player.society || "N/A"}
-                                            </td>
-                                            <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Branch */}
+                                        <div className="text-center">
+                                            <span 
+                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                            >
                                                 {player.branch || "N/A"}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Pagination */}

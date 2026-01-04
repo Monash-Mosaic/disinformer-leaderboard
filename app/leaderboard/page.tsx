@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
-
+import Footer from '@/components/Footer';
 /**
  * Interface for URL search parameters used in leaderboard navigation
  * These params enable shareable URLs with state preservation
@@ -42,9 +42,10 @@ export default async function Leaderboard({
     const search = params.search || '';  // Empty string if no search term
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans py-8 px-4">
-            <div className="max-w-6xl mx-auto">
-                {/* Suspense boundary provides loading state while fetching data */}
+        <div className="flex flex-col min-h-screen bg-[#ffffef]">
+            <div className="grow pb-8 px-4">
+                <div className="max-w-[1300px] mx-auto">
+                    {/* Suspense boundary provides loading state while fetching data */}
                 {/* Shows skeleton UI during initial load and navigation */}
                 <Suspense fallback={<LeaderboardSkeleton />}>
                     <LeaderboardTable
@@ -53,7 +54,9 @@ export default async function Leaderboard({
                         initialSearch={search}
                     />
                 </Suspense>
+                </div>
             </div>
+            <Footer />
         </div>
     );
 }

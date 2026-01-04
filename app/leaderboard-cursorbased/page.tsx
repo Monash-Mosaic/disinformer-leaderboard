@@ -3,7 +3,7 @@ import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
 import LeaderboardTableCursorBased from '@/components/leaderboard/LeaderboardTableCursorBased';
 import { getPaginatedLeaderboard } from '@/services/leaderboard-cursor-service';
-
+import Footer from '@/components/Footer';
 /**
  * Interface for URL search parameters used in leaderboard navigation
  * These params enable shareable URLs with state preservation
@@ -47,9 +47,10 @@ export default async function LeaderboardCursorBased({
     const dataPromise = getPaginatedLeaderboard(page, mode, search);
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans py-8 px-4">
-            <div className="max-w-6xl mx-auto">
-                {/* Suspense boundary provides loading state while fetching data */}
+        <div className="flex flex-col min-h-screen bg-[#ffffef]">
+            <div className="grow pb-8 px-4">
+                <div className="max-w-[1300px] mx-auto">
+                   {/* Suspense boundary provides loading state while fetching data */}
                 {/* Shows skeleton UI during initial load and navigation */}
                 <Suspense fallback={<LeaderboardSkeleton />}>
                     <LeaderboardTableCursorBased
@@ -59,7 +60,9 @@ export default async function LeaderboardCursorBased({
                         initialSearch={search}
                     />
                 </Suspense>
+                </div>
             </div>
+            <Footer />
         </div>
     );
 }

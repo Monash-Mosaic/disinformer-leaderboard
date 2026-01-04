@@ -63,7 +63,7 @@ export default async function LeaderboardOffsetBased({
 
     return (
         <div className="flex flex-col min-h-screen bg-[#ffffef]">
-            <div className="flex-grow pb-8 px-4">
+            <div className="grow pb-8 px-4">
                 <div className="max-w-[1300px] mx-auto">
                     {/* Suspense boundary provides loading state while fetching data */}
                     {/* Shows skeleton UI during initial load and navigation */}
