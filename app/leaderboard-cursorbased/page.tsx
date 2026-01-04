@@ -3,7 +3,6 @@ import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
 import LeaderboardTableCursorBased from '@/components/leaderboard/LeaderboardTableCursorBased';
 import { getPaginatedLeaderboard } from '@/services/leaderboard-cursor-service';
-import Footer from '@/components/Footer';
 /**
  * Interface for URL search parameters used in leaderboard navigation
  * These params enable shareable URLs with state preservation
@@ -62,7 +61,6 @@ export default async function LeaderboardCursorBased({
                 </Suspense>
                 </div>
             </div>
-            <Footer />
         </div>
     );
 }

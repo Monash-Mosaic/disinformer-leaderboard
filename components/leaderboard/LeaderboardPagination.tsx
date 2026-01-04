@@ -72,21 +72,21 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
     const pageNumbers = getPageNumbers(currentPage, totalPages);
     
     return (
-        <div className="mt-8 flex justify-center items-center gap-2">
+        <div className="mt-6 sm:mt-8 flex flex-wrap justify-center items-center gap-1 sm:gap-2 px-2">
             {/* Previous arrow */}
             <button
                 onClick={onPrev}
                 disabled={currentPage === 1}
-                className="flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
+                className="flex items-center gap-1 sm:gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
                 aria-label="Previous page"
             >
                 <span 
-                    className="font-['Play'] font-bold text-[24px] text-[#2d4143] disabled:text-gray-400"
+                    className="hidden sm:inline font-['Play'] font-bold text-base sm:text-lg md:text-[24px] text-[#2d4143] disabled:text-gray-400"
                     style={{ letterSpacing: '0.24px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                 >
                     Prev
                 </span>
-                <img src="/assets/arrow-prev.png" alt="Previous" className="w-[33px] h-[33px]" />
+                <img src="/assets/arrow-prev.png" alt="Previous" className="w-6 h-6 sm:w-7 sm:h-7 md:w-[33px] md:h-[33px]" />
             </button>
             
             {/* Page numbers */}
@@ -95,7 +95,7 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
                     return (
                         <span
                             key={`ellipsis-${index}`}
-                            className="px-2 text-[#2d4143] font-['Play'] font-bold text-[24px]"
+                            className="px-1 sm:px-2 text-[#2d4143] font-['Play'] font-bold text-lg sm:text-xl md:text-[24px]"
                         >
                             ...
                         </span>
@@ -109,7 +109,7 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
                     <button
                         key={pageNum}
                         onClick={() => onPageClick(pageNum)}
-                        className={`min-w-[37px] px-2 font-['Play'] font-bold text-[36px] transition-colors ${
+                        className={`min-w-7 sm:min-w-8 md:min-w-[37px] px-1 sm:px-1.5 md:px-2 font-['Play'] font-bold text-2xl sm:text-3xl md:text-[36px] transition-colors ${
                             isActive
                                 ? "text-[#ff4805]"
                                 : "text-[#2d4143] hover:text-[#317070]"
@@ -127,14 +127,14 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
             <button
                 onClick={onNext}
                 disabled={currentPage === totalPages}
-                className="flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
+                className="flex items-center gap-1 sm:gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
                 aria-label="Next page"
             >
-                <div className="w-[30px] h-[30px] flex items-center justify-center">
-                    <img src="/assets/arrow-next.png" alt="Next" className="w-[33px] h-[33px]" />
+                <div className="flex items-center justify-center">
+                    <img src="/assets/arrow-next.png" alt="Next" className="w-6 h-6 sm:w-7 sm:h-7 md:w-[33px] md:h-[33px]" />
                 </div>
                 <span 
-                    className="font-['Play'] font-bold text-[24px] text-[#2d4143] disabled:text-gray-400"
+                    className="hidden sm:inline font-['Play'] font-bold text-base sm:text-lg md:text-[24px] text-[#2d4143] disabled:text-gray-400"
                     style={{ letterSpacing: '0.24px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                 >
                     Next

@@ -297,10 +297,10 @@ export default function LeaderboardTable({
         : 'Netizen Leaderboard';
 
     return (
-        <div className="py-8">
-            <div className="max-w-[1300px] mx-auto">
+        <div className="py-4 sm:py-6 md:py-8">
+            <div className="max-w-[1300px] mx-auto px-2 sm:px-4">
                 <h1 
-                    className={`text-[72px] font-['Luckiest_Guy'] text-center mb-8 ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                    className={`lg:text-6xl md:text-5xl sm:text-4xl font-['Luckiest_Guy'] text-center mb-8 ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                     style={{ letterSpacing: '0.72px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', lineHeight: '1.4' }}
                 >
                     {mode === RankingCriteria.Netizen ? 'Netizen Leaderboards' : 'Disinformer Leaderboards'}
@@ -321,37 +321,37 @@ export default function LeaderboardTable({
                 />
 
                 {error ? (
-                    <p className="text-red-500 text-center">{error}</p>
+                    <p className="text-red-500 text-center text-sm sm:text-base">{error}</p>
                 ) : (
                     <>
                         {/* Table Headers */}
-                        <div className="grid grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-4 mb-4 px-4">
+                        <div className="grid grid-cols-[30px_1fr_1fr_1.2fr_1fr] sm:grid-cols-[50px_1fr_1fr_1.3fr_1fr] md:grid-cols-[60px_1fr_1fr_1.5fr_1.2fr] lg:grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-1 sm:gap-2 lg:gap-4 mb-3 sm:mb-4 px-2 sm:px-3 lg:px-4">
                             <div 
-                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                className={`font-['Play'] font-bold text-[10px] sm:text-sm md:text-lg lg:text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                                 style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                             >
                                 Place
                             </div>
                             <div 
-                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                className={`font-['Play'] font-bold text-[10px] sm:text-sm md:text-lg lg:text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                                 style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                             >
                                 Username
                             </div>
                             <div 
-                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                className={`font-['Play'] font-bold text-[10px] sm:text-sm md:text-lg lg:text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                                 style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                             >
                                 Points
                             </div>
                             <div 
-                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                className={`font-['Play'] font-bold text-[10px] sm:text-sm md:text-lg lg:text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                                 style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                             >
                                 IFRC Societies
                             </div>
                             <div 
-                                className={`font-['Play'] font-bold text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                className={`font-['Play'] font-bold text-[10px] sm:text-sm md:text-lg lg:text-[28px] text-center ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                                 style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                             >
                                 Branches
@@ -359,8 +359,7 @@ export default function LeaderboardTable({
                         </div>
 
                         {/* Leaderboard Rows */}
-                        <div className="space-y-3">
-                            {players.map((player, index) => {
+                        <div className="space-y-2 sm:space-y-3">{players.map((player, index) => {
                                 const globalRank = (currentPage - 1) * itemsPerPage + index + 1;
                                 
                                 // Determine row background color based on rank
@@ -376,30 +375,30 @@ export default function LeaderboardTable({
                                 return (
                                     <div 
                                         key={player.id}
-                                        className={`${bgColor} rounded-[20px] grid grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-4 items-center px-4 py-5`}
+                                        className={`${bgColor} rounded-xl sm:rounded-[20px] grid grid-cols-[30px_1fr_1fr_1.2fr_1fr] sm:grid-cols-[50px_1fr_1fr_1.3fr_1fr] md:grid-cols-[60px_1fr_1fr_1.5fr_1.2fr] lg:grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-1 sm:gap-2 lg:gap-4 items-center px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5`}
                                     >
                                         {/* Place with medal badge for top 3 */}
                                         <div className="flex justify-center items-center">
                                             {globalRank <= 3 ? (
                                                 <div className="relative">
                                                     {/* Medal wings */}
-                                                    <div className="absolute top-[25px] left-0 w-[19px] h-[25px]">
+                                                    <div className="absolute top-[17px] sm:top-5 lg:top-[25px] left-0 w-3 sm:w-[15px] lg:w-[19px] h-[17px] sm:h-5 lg:h-[25px]">
                                                         <img 
                                                             src={"/assets/medal-wing-left.png"} 
                                                             alt="" 
                                                             className="w-full h-full"
                                                         />
                                                     </div>
-                                                    <div className="absolute top-[25px] right-0 w-[19px] h-[25px]">
+                                                    <div className="absolute top-[17px] sm:top-5 lg:top-[25px] right-0 w-3 sm:w-[15px] lg:w-[19px] h-[17px] sm:h-5 lg:h-[25px]">
                                                         <img 
                                                             src={"/assets/medal-wing-right.png"} 
                                                             alt="" 
                                                             className="w-full h-full"
                                                         />
                                                     </div>
-                                                    <div className={`w-10 h-10 rounded-full border-2 border-black flex items-center justify-center ${bgColor} relative z-10`}>
+                                                    <div className={`w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full border border-black sm:border-2 flex items-center justify-center ${bgColor} relative z-10`}>
                                                         <span 
-                                                            className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                            className="font-['Play'] font-bold text-[8px] sm:text-xs md:text-base lg:text-[20px] text-[#2d4143]"
                                                             style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                                                         >
                                                             {globalRank}
@@ -408,7 +407,7 @@ export default function LeaderboardTable({
                                                 </div>
                                             ) : (
                                                 <span 
-                                                    className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                    className="font-['Play'] font-bold text-[8px] sm:text-xs md:text-base lg:text-[20px] text-[#2d4143]"
                                                     style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                                                 >
                                                     {globalRank}
@@ -417,9 +416,9 @@ export default function LeaderboardTable({
                                         </div>
                                         
                                         {/* Username */}
-                                        <div className="text-center">
+                                        <div className="text-center overflow-hidden">
                                             <span 
-                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                className="font-['Play'] font-bold text-[8px] sm:text-xs md:text-base lg:text-[20px] text-[#2d4143] wrap-break-word line-clamp-2"
                                                 style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                                             >
                                                 {player.username}
@@ -429,7 +428,7 @@ export default function LeaderboardTable({
                                         {/* Points */}
                                         <div className="text-center">
                                             <span 
-                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                className="font-['Play'] font-bold text-[8px] sm:text-xs md:text-base lg:text-[20px] text-[#2d4143]"
                                                 style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                                             >
                                                 {points}
@@ -437,9 +436,9 @@ export default function LeaderboardTable({
                                         </div>
                                         
                                         {/* IFRC Society */}
-                                        <div className="text-center">
+                                        <div className="text-center overflow-hidden">
                                             <span 
-                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                className="font-['Play'] font-bold text-[8px] sm:text-xs md:text-base lg:text-[20px] text-[#2d4143] wrap-break-word line-clamp-2"
                                                 style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                                             >
                                                 {player.society || "N/A"}
@@ -447,9 +446,9 @@ export default function LeaderboardTable({
                                         </div>
                                         
                                         {/* Branch */}
-                                        <div className="text-center">
+                                        <div className="text-center overflow-hidden">
                                             <span 
-                                                className="font-['Play'] font-bold text-[20px] text-[#2d4143]"
+                                                className="font-['Play'] font-bold text-[8px] sm:text-xs md:text-base lg:text-[20px] text-[#2d4143] wrap-break-word line-clamp-2"
                                                 style={{ letterSpacing: '0.2px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                                             >
                                                 {player.branch || "N/A"}

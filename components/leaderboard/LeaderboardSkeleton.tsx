@@ -12,7 +12,7 @@ export default function LeaderboardSkeleton() {
             <div className="max-w-[1300px] mx-auto">
                 {/* Title */}
                 <h1 
-                    className={`text-[72px] font-['Luckiest_Guy'] text-center mb-8 ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                    className={`lg:text-6xl md:text-5xl sm:text-4xl font-['Luckiest_Guy'] text-center mb-8 ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                     style={{ letterSpacing: '0.72px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', lineHeight: '1.4' }}
                 >
                     Disinformer Leaderboards

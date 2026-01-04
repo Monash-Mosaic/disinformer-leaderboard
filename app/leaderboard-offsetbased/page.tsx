@@ -3,7 +3,6 @@ import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
 import LeaderboardTableOffsetBased from '@/components/leaderboard/LeaderboardTableOffsetBased';
 import { getPaginatedLeaderboard } from '@/services/leaderboard-offset-service';
-import Footer from '@/components/Footer';
 
 /**
  * Interface for URL search parameters used in leaderboard navigation
@@ -77,7 +76,6 @@ export default async function LeaderboardOffsetBased({
                     </Suspense>
                 </div>
             </div>
-            <Footer />
         </div>
     );
 }

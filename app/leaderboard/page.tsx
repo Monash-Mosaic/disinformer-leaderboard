@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
-import Footer from '@/components/Footer';
 /**
  * Interface for URL search parameters used in leaderboard navigation
  * These params enable shareable URLs with state preservation
@@ -56,7 +55,6 @@ export default async function Leaderboard({
                 </Suspense>
                 </div>
             </div>
-            <Footer />
         </div>
     );
 }
