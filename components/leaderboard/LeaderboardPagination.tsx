@@ -31,7 +31,7 @@ function getPageNumbers(currentPage: number, totalPages: number): (number | stri
     const delta = 1; // Number of pages to show on each side of current page
     
     // If total pages is small enough, show all pages
-    if (totalPages <= 7) {
+    if (totalPages <= 11) {
         for (let i = 1; i <= totalPages; i++) {
             pages.push(i);
         }
@@ -73,23 +73,29 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
     
     return (
         <div className="mt-8 flex justify-center items-center gap-2">
-            {/* Previous button */}
+            {/* Previous arrow */}
             <button
                 onClick={onPrev}
                 disabled={currentPage === 1}
-                className="px-3 py-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
                 aria-label="Previous page"
             >
-                &lt;
+                <span 
+                    className="font-['Play'] font-bold text-[24px] text-[#2d4143] disabled:text-gray-400"
+                    style={{ letterSpacing: '0.24px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                >
+                    Prev
+                </span>
+                <img src="/assets/arrow-prev.png" alt="Previous" className="w-[33px] h-[33px]" />
             </button>
             
-            {/* Page numbers with ellipsis */}
+            {/* Page numbers */}
             {pageNumbers.map((page, index) => {
                 if (page === "...") {
                     return (
                         <span
                             key={`ellipsis-${index}`}
-                            className="px-3 py-2 text-zinc-500 dark:text-zinc-400"
+                            className="px-2 text-[#2d4143] font-['Play'] font-bold text-[24px]"
                         >
                             ...
                         </span>
@@ -103,11 +109,12 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
                     <button
                         key={pageNum}
                         onClick={() => onPageClick(pageNum)}
-                        className={`px-3 py-2 rounded min-w-10 transition-colors ${
+                        className={`min-w-[37px] px-2 font-['Play'] font-bold text-[36px] transition-colors ${
                             isActive
-                                ? "bg-blue-500 text-white font-bold"
-                                : "hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                ? "text-[#ff4805]"
+                                : "text-[#2d4143] hover:text-[#317070]"
                         }`}
+                        style={{ letterSpacing: '0.36px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                         aria-label={`Page ${pageNum}`}
                         aria-current={isActive ? "page" : undefined}
                     >
@@ -116,14 +123,22 @@ export default function Pagination({ currentPage, totalPages, onPrev, onNext, on
                 );
             })}
             
-            {/* Next button */}
+            {/* Next arrow and text */}
             <button
                 onClick={onNext}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
                 aria-label="Next page"
             >
-                &gt;
+                <div className="w-[30px] h-[30px] flex items-center justify-center">
+                    <img src="/assets/arrow-next.png" alt="Next" className="w-[33px] h-[33px]" />
+                </div>
+                <span 
+                    className="font-['Play'] font-bold text-[24px] text-[#2d4143] disabled:text-gray-400"
+                    style={{ letterSpacing: '0.24px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                >
+                    Next
+                </span>
             </button>
         </div>
     );

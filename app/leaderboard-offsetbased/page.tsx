@@ -3,6 +3,7 @@ import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
 import { RankingCriteria } from "@/types/leaderboard";
 import LeaderboardTableOffsetBased from '@/components/leaderboard/LeaderboardTableOffsetBased';
 import { getPaginatedLeaderboard } from '@/services/leaderboard-offset-service';
+import Footer from '@/components/Footer';
 
 /**
  * Interface for URL search parameters used in leaderboard navigation
@@ -61,19 +62,22 @@ export default async function LeaderboardOffsetBased({
     const dataPromise = getPaginatedLeaderboard(page, mode, search);
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans py-8 px-4">
-            <div className="max-w-6xl mx-auto">
-                {/* Suspense boundary provides loading state while fetching data */}
-                {/* Shows skeleton UI during initial load and navigation */}
-                <Suspense fallback={<LeaderboardSkeleton />}>
-                    <LeaderboardTableOffsetBased
-                        dataPromise={dataPromise}
-                        initialPage={page}
-                        initialMode={mode}
-                        initialSearch={search}
-                    />
-                </Suspense>
+        <div className="flex flex-col min-h-screen bg-[#ffffef]">
+            <div className="flex-grow pb-8 px-4">
+                <div className="max-w-[1300px] mx-auto">
+                    {/* Suspense boundary provides loading state while fetching data */}
+                    {/* Shows skeleton UI during initial load and navigation */}
+                    <Suspense fallback={<LeaderboardSkeleton />}>
+                        <LeaderboardTableOffsetBased
+                            dataPromise={dataPromise}
+                            initialPage={page}
+                            initialMode={mode}
+                            initialSearch={search}
+                        />
+                    </Suspense>
+                </div>
             </div>
+            <Footer />
         </div>
     );
 }
