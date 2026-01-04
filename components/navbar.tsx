@@ -18,7 +18,7 @@ export default function Navbar() {
                 <div className="flex justify-between items-center">
                     {/* Logo and Brand */}
                     <Link href="/" className="shrink-0 pb-4 md:pb-10">
-                        <Image src="/assets/logo.png" alt="Logo" width={300} height={300}/>
+                        <Image src="/assets/logo.png" alt="Logo" width={300} height={300} />
                     </Link>
 
                     {/* Mobile Menu Button */}
@@ -28,15 +28,12 @@ export default function Navbar() {
                         aria-label="Toggle menu"
                     >
                         <div className="w-6 h-5 flex flex-col justify-between">
-                            <span className={`w-full h-0.5 bg-[#2d4143] transition-all ${
-                                mobileMenuOpen ? 'rotate-45 translate-y-2' : ''
-                            }`} />
-                            <span className={`w-full h-0.5 bg-[#2d4143] transition-all ${
-                                mobileMenuOpen ? 'opacity-0' : ''
-                            }`} />
-                            <span className={`w-full h-0.5 bg-[#2d4143] transition-all ${
-                                mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''
-                            }`} />
+                            <span className={`w-full h-0.5 bg-[#2d4143] transition-all ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''
+                                }`} />
+                            <span className={`w-full h-0.5 bg-[#2d4143] transition-all ${mobileMenuOpen ? 'opacity-0' : ''
+                                }`} />
+                            <span className={`w-full h-0.5 bg-[#2d4143] transition-all ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''
+                                }`} />
                         </div>
                     </button>
 
@@ -53,8 +50,8 @@ export default function Navbar() {
                             Home
                         </Link>
                         <Link
-                            href="/leaderboard"
-                            className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard')
+                            href="/leaderboard-offsetbased"
+                            className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard-offsetbased')
                                 ? 'text-[#ff4805]'
                                 : 'text-[#2d4143] hover:text-[#317070]'
                                 }`}
@@ -62,7 +59,7 @@ export default function Navbar() {
                         >
                             Leaderboard
                         </Link>
-                        <Link
+                        {/* <Link
                             href="/leaderboard-cursorbased"
                             className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard-cursorbased')
                                 ? 'text-[#ff4805]'
@@ -81,7 +78,7 @@ export default function Navbar() {
                             style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                         >
                             Leaderboard (Offset-Based)
-                        </Link>
+                        </Link> */}
                     </div>
                 </div>
 
@@ -92,26 +89,24 @@ export default function Navbar() {
                             <Link
                                 href="/"
                                 onClick={() => setMobileMenuOpen(false)}
-                                className={`py-2 px-4 transition-colors font-['Play'] font-bold text-xl sm:text-2xl flex items-center gap-2 ${
-                                    isActive('/') ? 'text-[#ff4805]' : 'text-[#2d4143] hover:text-[#317070]'
-                                }`}
+                                className={`py-2 px-4 transition-colors font-['Play'] font-bold text-xl sm:text-2xl flex items-center gap-2 ${isActive('/') ? 'text-[#ff4805]' : 'text-[#2d4143] hover:text-[#317070]'
+                                    }`}
                                 style={{ letterSpacing: '0.28px' }}
                             >
                                 {isActive('/') && <span className="text-[#4ecaca]"><ChevronRight /></span>}
                                 Home
                             </Link>
                             <Link
-                                href="/leaderboard"
+                                href="/leaderboard-offsetbased"
                                 onClick={() => setMobileMenuOpen(false)}
-                                className={`py-2 px-4 transition-colors font-['Play'] font-bold text-xl sm:text-2xl flex items-center gap-2 ${
-                                    isActive('/leaderboard') ? 'text-[#ff4805]' : 'text-[#2d4143] hover:text-[#317070]'
-                                }`}
+                                className={`py-2 px-4 transition-colors font-['Play'] font-bold text-xl sm:text-2xl flex items-center gap-2 ${isActive('/leaderboard-offsetbased') ? 'text-[#ff4805]' : 'text-[#2d4143] hover:text-[#317070]'
+                                    }`}
                                 style={{ letterSpacing: '0.28px' }}
                             >
-                                {isActive('/leaderboard') && <span className="text-[#4ecaca]"><ChevronRight /></span>}
+                                {isActive('/leaderboard-offsetbased') && <span className="text-[#4ecaca]"><ChevronRight /></span>}
                                 Leaderboard
                             </Link>
-                            <Link
+                            {/* <Link
                                 href="/leaderboard-cursorbased"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className={`py-2 px-4 transition-colors font-['Play'] font-bold text-xl sm:text-2xl flex items-center gap-2 ${
@@ -132,7 +127,7 @@ export default function Navbar() {
                             >
                                 {isActive('/leaderboard-offsetbased') && <span className="text-[#4ecaca]"><ChevronRight /></span>}
                                 Leaderboard (Offset-Based)
-                            </Link>
+                            </Link> */}
                         </div>
                     </div>
                 )}
