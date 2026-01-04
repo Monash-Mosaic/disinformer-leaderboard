@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
+import Image from 'next/image';
 export default function Navbar() {
     const pathname = usePathname();
 
@@ -13,24 +13,8 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center">
                     {/* Logo and Brand */}
-                    <Link href="/" className="flex items-center">
-                        <div className="flex items-center relative">
-                            <span 
-                                className="text-4xl font-['Bungee_Shade'] text-[#2d4143]" 
-                                style={{ letterSpacing: '0.48px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
-                            >
-                                D
-                            </span>
-                            <div className="relative w-16 h-16 -mx-1 inline-block" style={{ top: '2px' }}>
-                                <img src="/assets/search-icon.png" alt="" className="w-full h-full rotate-[314deg]" />
-                            </div>
-                            <span 
-                                className="text-4xl font-['Bungee_Shade'] text-[#2d4143]" 
-                                style={{ letterSpacing: '0.48px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
-                            >
-                                sInformeR
-                            </span>
-                        </div>
+                    <Link href="/" className="shrink-0 pb-10">
+                        <Image src="/assets/logo.png" alt="Logo" width={500} height={500} />
                     </Link>
 
                     {/* Navigation Links */}
@@ -46,8 +30,8 @@ export default function Navbar() {
                             Home
                         </Link>
                         <Link
-                            href="/leaderboard-offsetbased"
-                            className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard') || isActive('/leaderboard-cursorbased') || isActive('/leaderboard-offsetbased')
+                            href="/leaderboard"
+                            className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard')
                                 ? 'text-[#ff4805]'
                                 : 'text-[#2d4143] hover:text-[#317070]'
                                 }`}
@@ -55,10 +39,27 @@ export default function Navbar() {
                         >
                             Leaderboard
                         </Link>
+                        <Link
+                            href="/leaderboard-cursorbased"
+                            className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard-cursorbased')
+                                ? 'text-[#ff4805]'
+                                : 'text-[#2d4143] hover:text-[#317070]'
+                                }`}
+                            style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                        >
+                            Leaderboard (Cursor-Based)
+                        </Link>
+                        <Link
+                            href="/leaderboard-offsetbased"
+                            className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard-offsetbased')
+                                ? 'text-[#ff4805]'
+                                : 'text-[#2d4143] hover:text-[#317070]'
+                                }`}
+                            style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                        >
+                            Leaderboard (Offset-Based)
+                        </Link>
                     </div>
-
-                    {/* Right side spacer */}
-                    <div className="w-16" />
                 </div>
             </div>
         </nav>
