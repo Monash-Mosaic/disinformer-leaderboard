@@ -358,6 +358,17 @@ export default function LeaderboardTable({
                             </div>
                         </div>
 
+                        {/* No Results Message */}
+                        {players.length === 0 ? (
+                            <div className="text-center py-12 sm:py-16">
+                                <p className={`font-['Play'] font-bold text-lg sm:text-xl md:text-2xl lg:text-3xl ${mode === RankingCriteria.Netizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                    style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                >
+                                    No results found
+                                </p>
+                            </div>
+                        ) : (
+                        <>
                         {/* Leaderboard Rows */}
                         <div className="space-y-2 sm:space-y-3">{players.map((player, index) => {
                                 const globalRank = (currentPage - 1) * itemsPerPage + index + 1;
@@ -467,6 +478,8 @@ export default function LeaderboardTable({
                             onNext={() => hasNextPage ? handlePageChange(currentPage + 1) : undefined}
                             onPageClick={handlePageChange}
                         />
+                        </>
+                        )}
                     </>
                 )}
             </div>

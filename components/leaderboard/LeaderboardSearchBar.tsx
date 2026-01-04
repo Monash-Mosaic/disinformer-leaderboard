@@ -15,6 +15,13 @@ export default function SearchBar({ inputValue, setInputValue, onSubmit, disable
         }
     };
 
+    const handleClear = () => {
+        setInputValue('');
+        if (!disabled) {
+            onSubmit('');
+        }
+    };
+
     return (
         <div className="mb-6 sm:mb-8 flex justify-center px-2 sm:px-4">
             <form onSubmit={handleSubmit} className="relative w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl">
@@ -40,6 +47,18 @@ export default function SearchBar({ inputValue, setInputValue, onSubmit, disable
                     
                     {/* Vertical divider */}
                     <div className="absolute right-[45px] sm:right-[52px] md:right-[60px] h-[30px] sm:h-[38px] md:h-[45px] w-px bg-[#2d4143]" />
+                    
+                    {/* Clear button (X) - shows when input has text */}
+                    {inputValue && (
+                        <button
+                            type="button"
+                            onClick={handleClear}
+                            disabled={disabled}
+                            className={`absolute right-[52px] sm:right-[60px] md:right-[72px] text-[#2d4143] font-bold text-xl sm:text-2xl md:text-3xl ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:text-[#ff4805] transition-opacity'}`}
+                        >
+                            ×
+                        </button>
+                    )}
                     
                     {/* Right search button/icon */}
                     <button

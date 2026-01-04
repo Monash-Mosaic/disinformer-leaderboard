@@ -280,6 +280,17 @@ export default function LeaderboardTableOffsetBased({
                             </div>
                         </div>
 
+                        {/* No Results Message */}
+                        {data.players.length === 0 ? (
+                            <div className="text-center py-12 sm:py-16">
+                                <p className={`font-['Play'] font-bold text-lg sm:text-xl md:text-2xl lg:text-3xl ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
+                                    style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
+                                >
+                                    No results found
+                                </p>
+                            </div>
+                        ) : (
+                        <>
                         {/* Leaderboard Rows */}
                         <div className="space-y-2 sm:space-y-3">
                             {data.players.map((player, index) => {
@@ -390,6 +401,8 @@ export default function LeaderboardTableOffsetBased({
                             onNext={() => data.hasNextPage && handlePageChange(data.currentPage + 1)}
                             onPageClick={handlePageChange}
                         />
+                        </>
+                        )}
                     </>
                 ) : null}
             </div>
