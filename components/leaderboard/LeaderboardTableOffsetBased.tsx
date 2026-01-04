@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useTransition, useEffect } from "react";
+import { use, useState, useTransition, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
@@ -75,14 +75,28 @@ export default function LeaderboardTableOffsetBased({
     const [searchTerm, setSearchTerm] = useState(initialSearch);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Refs to store current values for real-time subscription
+    // This prevents stale closure issues where the subscription uses old values
+    const currentPageRef = useRef(currentPage);
+    const modeRef = useRef(mode);
+    const searchTermRef = useRef(searchTerm);
+
+    // Keep refs in sync with state
+    useEffect(() => {
+        currentPageRef.current = currentPage;
+        modeRef.current = mode;
+        searchTermRef.current = searchTerm;
+    }, [currentPage, mode, searchTerm]);
 
     /**
      * Handles real-time leaderboard updates
      * When the leaderboard changes, re-fetch the current page data silently
+     * Uses refs to avoid stale closure issues
      */
     const handleLeaderboardChange = () => {
         if (enableRealtime) {
-            fetchLeaderboardData(currentPage, mode, searchTerm, true); // Silent update
+            // Use ref values to get the current state, not closure values
+            fetchLeaderboardData(currentPageRef.current, modeRef.current, searchTermRef.current, true);
         }
     };
 
