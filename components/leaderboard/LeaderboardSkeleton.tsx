@@ -3,19 +3,22 @@
 import LeaderboardSearchBar from "./LeaderboardSearchBar";
 import LeaderboardToggleButton from "./LeaderboardToggleButton";
 
-export default function LeaderboardSkeleton() {
+interface LeaderboardSkeletonProps {
+    mode?: 'disinformer' | 'netizen';
+}
+export default function LeaderboardSkeleton({ mode = 'disinformer' }: LeaderboardSkeletonProps) {
     const itemsPerPage = 10;
-    const isNetizen = false; // Default to disinformer theme for skeleton
-    
+    const isNetizen = mode === 'netizen';
+
     return (
         <div className="py-8">
             <div className="max-w-[1300px] mx-auto">
                 {/* Title */}
-                <h1 
+                <h1
                     className={`lg:text-6xl md:text-5xl sm:text-4xl font-['Luckiest_Guy'] text-center mb-8 ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                     style={{ letterSpacing: '0.72px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', lineHeight: '1.4' }}
                 >
-                    Disinformer Leaderboards
+                    {isNetizen ? 'Netizen' : 'Disinformer'} Leaderboards
                 </h1>
 
                 {/* Toggle Button Skeleton */}
@@ -36,31 +39,31 @@ export default function LeaderboardSkeleton() {
 
                 {/* Table Headers Skeleton */}
                 <div className="grid grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-4 mb-4 px-4">
-                    <div 
+                    <div
                         className={`font-['Play'] font-bold text-[28px] text-center ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                         style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                     >
                         Place
                     </div>
-                    <div 
+                    <div
                         className={`font-['Play'] font-bold text-[28px] text-center ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                         style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                     >
                         Username
                     </div>
-                    <div 
+                    <div
                         className={`font-['Play'] font-bold text-[28px] text-center ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                         style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                     >
                         Points
                     </div>
-                    <div 
+                    <div
                         className={`font-['Play'] font-bold text-[28px] text-center ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                         style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                     >
                         IFRC Societies
                     </div>
-                    <div 
+                    <div
                         className={`font-['Play'] font-bold text-[28px] text-center ${isNetizen ? 'text-[#ff4805]' : 'text-[#317070]'}`}
                         style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)', textDecoration: 'underline' }}
                     >
@@ -72,15 +75,15 @@ export default function LeaderboardSkeleton() {
                 <div className="space-y-3">
                     {Array.from({ length: itemsPerPage }, (_, index) => {
                         const globalRank = index + 1;
-                        
+
                         // Determine row background color based on rank
                         let bgColor = isNetizen ? 'bg-[#ff4805]/50' : 'bg-[#4ecaca]/50'; // Default based on mode
                         if (globalRank === 1) bgColor = 'bg-[#ffd700]'; // Gold
                         else if (globalRank === 2) bgColor = 'bg-[#c4c4c4]'; // Silver
                         else if (globalRank === 3) bgColor = 'bg-[#e5a01d]'; // Bronze
-                        
+
                         return (
-                            <div 
+                            <div
                                 key={index}
                                 className={`${bgColor} rounded-[20px] grid grid-cols-[80px_1fr_1fr_1.5fr_1.2fr] gap-4 items-center px-4 py-5`}
                             >
@@ -88,22 +91,22 @@ export default function LeaderboardSkeleton() {
                                 <div className="flex justify-center items-center">
                                     <div className="w-8 h-8 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse"></div>
                                 </div>
-                                
+
                                 {/* Username */}
                                 <div className="text-center">
                                     <div className="w-24 h-8 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse mx-auto"></div>
                                 </div>
-                                
+
                                 {/* Points */}
                                 <div className="text-center">
                                     <div className="w-16 h-8 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse mx-auto"></div>
                                 </div>
-                                
+
                                 {/* IFRC Society */}
                                 <div className="text-center">
                                     <div className="w-20 h-8 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse mx-auto"></div>
                                 </div>
-                                
+
                                 {/* Branch */}
                                 <div className="text-center">
                                     <div className="w-18 h-8 bg-zinc-300 dark:bg-zinc-600 rounded animate-pulse mx-auto"></div>
