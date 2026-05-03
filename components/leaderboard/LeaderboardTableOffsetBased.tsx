@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useState, useTransition, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { use, useState, useEffect, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
 import { fetchLeaderboardAction } from "@/app/leaderboard-offsetbased/actions";
@@ -60,10 +60,8 @@ export default function LeaderboardTableOffsetBased({
     // Use the "use" hook to resolve the server-fetched data promise
     const initialData = use(dataPromise);
 
-    // Next.js navigation hooks
-    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
 
     // Component state
     const [data, setData] = useState<LeaderboardPageResult>(initialData);
@@ -180,10 +178,10 @@ export default function LeaderboardTableOffsetBased({
             params.delete('search');
         }
 
-        // Use startTransition for non-blocking navigation
-        startTransition(() => {
-            router.push(`/leaderboard-offsetbased?${params.toString()}`, { scroll: false });
-        });
+        const qs = params.toString();
+        const href = qs ? `${pathname}?${qs}` : pathname;
+        const nextState = { ...window.history.state, as: href, url: href };
+        window.history.pushState(nextState, "", href);
     };
 
     /**
@@ -230,7 +228,7 @@ export default function LeaderboardTableOffsetBased({
         fetchLeaderboardData(page, mode, searchTerm);
     };
 
-    const loading = isLoading || isPending;
+    const loading = isLoading;
     const isNetizen = mode === RankingCriteria.Netizen;
 
     return (
