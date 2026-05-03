@@ -1,7 +1,9 @@
 import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
-import { query, orderBy, where, onSnapshot, Query } from "firebase/firestore";
+import { query, orderBy, where, onSnapshot, Query, limit } from "firebase/firestore";
 import { playersCollection } from "@/utils/firebase.client";
+
+const REALTIME_LISTENER_MAX_DOCS = 500;
 
 /**
  * Client-side real-time service for offset-based leaderboard
@@ -53,12 +55,14 @@ export function subscribeToLeaderboardChanges(
         );
     }
 
+    const boundedQuery = query(baseQuery, limit(REALTIME_LISTENER_MAX_DOCS));
+
     // Flag to ignore the initial snapshot (onSnapshot fires immediately)
     let isInitialSnapshot = true;
 
     // Set up real-time listener
     const unsubscribe = onSnapshot(
-        baseQuery,
+        boundedQuery,
         (snapshot) => {
             // Skip the initial snapshot to avoid unnecessary re-fetch
             if (isInitialSnapshot) {

@@ -1,3 +1,4 @@
+import type { CollectionReference, Query } from "firebase-admin/firestore";
 import { db } from "@/utils/firebase.admin";
 import { RankingCriteria, Player } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
@@ -29,6 +30,46 @@ function searchTermNormalize(term: string): string {
     return term.trim().toLowerCase();
 }
 
+function buildSortedPlayersQuery(
+    playersCollection: CollectionReference,
+    mode: RankingCriteria,
+    searchTerm: string
+): Query {
+    const sortField = mode === RankingCriteria.Netizen
+        ? 'totalNetizenPoints'
+        : 'totalDisinformerPoints';
+
+    let baseQuery: Query = playersCollection;
+
+    const searchTermNormalized = searchTerm ? searchTermNormalize(searchTerm) : undefined;
+
+    if (searchTermNormalized) {
+        baseQuery = baseQuery
+            .where('username_lowercase', '>=', searchTermNormalized)
+            .where('username_lowercase', '<=', searchTermNormalized + '\uf8ff');
+    }
+
+    return baseQuery
+        .orderBy(sortField, 'desc')
+        .orderBy('totalGamesPlayed', 'asc')
+        .orderBy('username_lowercase', 'asc');
+}
+
+const LEADERBOARD_PAGE_FIELD_MASK = [
+    'username',
+    'totalGamesPlayed',
+    'totalDisinformerPoints',
+    'totalNetizenPoints',
+    'username_lowercase',
+    'society',
+    'branch',
+    'email',
+    'createdAt',
+    'lastGamePlayedAt',
+    'avatar',
+    'surveysCompleted',
+] as const;
+
 /**
  * Fetches a single page of leaderboard data using offset-based pagination
  * 
@@ -57,34 +98,10 @@ export async function getPaginatedLeaderboard(
     try {
         // Validate and normalize inputs
         const normalizedPage = Math.max(1, Math.floor(page || 1));
-        const sortField = mode === RankingCriteria.Netizen
-            ? 'totalNetizenPoints'
-            : 'totalDisinformerPoints';
 
         const playersCollection = db.collection('players');
+        const sortedQuery = buildSortedPlayersQuery(playersCollection, mode, searchTerm);
 
-        // Build base query
-        let baseQuery: any = playersCollection;
-
-        // Add search filter if provided
-        // Note: Firestore doesn't support full-text search natively
-        // This uses range queries for prefix matching
-        const searchTermNormalized = searchTerm ? searchTermNormalize(searchTerm) : undefined;
-
-        if (searchTermNormalized) {
-            baseQuery = baseQuery
-                .where('username_lowercase', '>=', searchTermNormalized)
-                .where('username_lowercase', '<=', searchTermNormalized + '\uf8ff');
-        }
-
-        // Build the main query with ordering
-        const sortedQuery = baseQuery
-            .orderBy(sortField, 'desc')
-            .orderBy('totalGamesPlayed', 'asc')
-            .orderBy('username_lowercase', 'asc');
-
-        // Get total count of matching documents
-        // This is needed to calculate totalPages and pagination flags
         const countSnapshot = await sortedQuery.count().get();
         const totalDocuments = countSnapshot.data().count;
 
@@ -103,18 +120,20 @@ export async function getPaginatedLeaderboard(
         // Calculate offset (skip)
         const pageOffset = (validPage - 1) * PAGE_SIZE;
 
-        // Fetch this page's data with offset + limit
-        // Using firebase-admin SDK which supports .offset()
-        const snapshot = await sortedQuery
-            .offset(pageOffset)
-            .limit(PAGE_SIZE)
-            .get();
+        const snapshot =
+            totalDocuments === 0
+                ? null
+                : await sortedQuery
+                    .select(...LEADERBOARD_PAGE_FIELD_MASK)
+                    .offset(pageOffset)
+                    .limit(PAGE_SIZE)
+                    .get();
 
         // Log the data fetch reads
-        logFirestoreReads('getPageData', snapshot.docs.length);
+        logFirestoreReads('getPageData', snapshot?.docs.length ?? 0);
 
         // Transform documents into Player objects
-        const players = snapshot.docs.map((doc: any) => {
+        const players = (snapshot?.docs ?? []).map((doc: any) => {
             const data = doc.data();
 
             return {
@@ -164,24 +183,9 @@ export async function getTotalLeaderboardCount(
 ): Promise<number> {
     try {
         const playersCollection = db.collection('players');
+        const sortedQuery = buildSortedPlayersQuery(playersCollection, mode, searchTerm);
 
-        const sortField = mode === RankingCriteria.Netizen
-            ? 'totalNetizenPoints'
-            : 'totalDisinformerPoints';
-
-        let baseQuery: any = playersCollection;
-
-        if (searchTerm && searchTerm.trim()) {
-            baseQuery = baseQuery
-                .where('username', '>=', searchTerm)
-                .where('username', '<=', searchTerm + '\uf8ff');
-        }
-
-        const query = baseQuery
-            .orderBy(sortField, 'desc')
-            .orderBy('username', 'asc');
-
-        const snapshot = await query.count().get();
+        const snapshot = await sortedQuery.count().get();
         return snapshot.data().count;
     } catch (error) {
         console.error('[Offset Service] Error getting total count:', error);
