@@ -1,32 +1,40 @@
 import admin, { ServiceAccount } from "firebase-admin";
+import type { Firestore } from "firebase-admin/firestore";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
-// Load environment variables FIRST
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
+function getServiceAccount(): ServiceAccount {
+    const projectId =
+        process.env.FIREBASE_PROJECT_ID ??
+        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
-const serviceAccount: ServiceAccount = {
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-
-};
-
-// Database URL not needed anymore with Firestore
-
-export function getFirebaseAdmin() {
-    if (!admin.apps.length) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
+    if (!projectId || !clientEmail || !privateKey) {
+        throw new Error(
+            "Firebase Admin is not configured. Set FIREBASE_PROJECT_ID (or NEXT_PUBLIC_FIREBASE_PROJECT_ID), FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY."
+        );
     }
 
+    return { projectId, clientEmail, privateKey };
+}
+
+let firestoreSingleton: Firestore | null = null;
+
+export function getFirebaseAdmin(): typeof admin {
+    if (!admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(getServiceAccount()),
+        });
+    }
     return admin;
 }
 
-const firebaseAdmin = getFirebaseAdmin();
-
-const db = firebaseAdmin.firestore();
-
-export { firebaseAdmin, db };
+export function getDb(): Firestore {
+    if (!firestoreSingleton) {
+        firestoreSingleton = getFirebaseAdmin().firestore();
+    }
+    return firestoreSingleton;
+}

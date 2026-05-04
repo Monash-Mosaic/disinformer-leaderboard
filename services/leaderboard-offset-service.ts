@@ -1,5 +1,5 @@
 import type { CollectionReference, Query } from "firebase-admin/firestore";
-import { db } from "@/utils/firebase.admin";
+import { getDb } from "@/utils/firebase.admin";
 import { RankingCriteria, Player } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
 
@@ -99,7 +99,7 @@ export async function getPaginatedLeaderboard(
         // Validate and normalize inputs
         const normalizedPage = Math.max(1, Math.floor(page || 1));
 
-        const playersCollection = db.collection('players');
+        const playersCollection = getDb().collection('players');
         const sortedQuery = buildSortedPlayersQuery(playersCollection, mode, searchTerm);
 
         const countSnapshot = await sortedQuery.count().get();
@@ -182,7 +182,7 @@ export async function getTotalLeaderboardCount(
     searchTerm: string = ''
 ): Promise<number> {
     try {
-        const playersCollection = db.collection('players');
+        const playersCollection = getDb().collection('players');
         const sortedQuery = buildSortedPlayersQuery(playersCollection, mode, searchTerm);
 
         const snapshot = await sortedQuery.count().get();

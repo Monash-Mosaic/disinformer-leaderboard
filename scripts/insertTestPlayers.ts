@@ -4,7 +4,7 @@ import * as path from "path";
 // Load environment variables FIRST, before any other imports
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-import { db } from "@/utils/firebase.admin";
+import { getDb } from "@/utils/firebase.admin";
 import admin from "firebase-admin";
 import * as fs from "fs";
 
@@ -74,12 +74,12 @@ async function insertTestPlayers(): Promise<void> {
     try {
         console.log(`Starting insertion of ${TOTAL_RECORDS} test records...`);
 
-        const playersRef = db.collection("players");
+        const playersRef = getDb().collection("players");
         const insertedIds: string[] = [];
         let totalInserted = 0;
 
         for (let batch = 0; batch < TOTAL_RECORDS / BATCH_SIZE; batch++) {
-            const batchWrite = db.batch();
+            const batchWrite = getDb().batch();
             const startIdx = batch * BATCH_SIZE;
             const endIdx = Math.min(startIdx + BATCH_SIZE, TOTAL_RECORDS);
 

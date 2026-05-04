@@ -4,7 +4,7 @@ import { TOTAL_RECORDS, BATCH_SIZE } from "./insertTestPlayers";
 // Load environment variables FIRST, before any other imports
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-import { db } from "@/utils/firebase.admin";
+import { getDb } from "@/utils/firebase.admin";
 import * as fs from "fs";
 
 const MARKER = `TEST_MARKER_${TOTAL_RECORDS}_RECORDS`;
@@ -13,7 +13,7 @@ const TEST_IDS_FILE = path.join(process.cwd(), ".test-player-ids.json");
 async function deleteTestPlayers(): Promise<void> {
     console.log("Starting deletion of test records...");
 
-    const playersRef = db.collection("players");
+    const playersRef = getDb().collection("players");
     let deletedCount = 0;
     let failedCount = 0;
 
@@ -55,7 +55,7 @@ async function deleteTestPlayers(): Promise<void> {
     // Delete in batches
     const totalBatches = Math.ceil(idsToDelete.length / BATCH_SIZE);
     for (let batch = 0; batch < totalBatches; batch++) {
-        const batchWrite = db.batch();
+        const batchWrite = getDb().batch();
         const startIdx = batch * BATCH_SIZE;
         const endIdx = Math.min(startIdx + BATCH_SIZE, idsToDelete.length);
 

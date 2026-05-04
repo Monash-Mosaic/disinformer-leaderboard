@@ -1,5 +1,8 @@
 import { Suspense } from 'react';
 import LeaderboardSkeleton from "@/components/leaderboard/LeaderboardSkeleton";
+
+/** Avoid Firestore at build time; data is fetched on each request. */
+export const dynamic = 'force-dynamic';
 import { RankingCriteria } from "@/types/leaderboard";
 import LeaderboardTableOffsetBased from '@/components/leaderboard/LeaderboardTableOffsetBased';
 import { getPaginatedLeaderboard } from '@/services/leaderboard-offset-service';
