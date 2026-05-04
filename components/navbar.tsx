@@ -39,7 +39,8 @@ export default function Navbar() {
 
                     {/* Desktop Navigation Links */}
                     <div className="hidden lg:flex items-center gap-4 xl:gap-16">
-                        <Link
+                        {/* Disabled for now */}
+                        {/* <Link
                             href="/"
                             className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/')
                                 ? 'text-[#ff4805]'
@@ -48,7 +49,7 @@ export default function Navbar() {
                             style={{ letterSpacing: '0.28px', textShadow: '0px 4px 4px rgba(0,0,0,0.25)' }}
                         >
                             Home
-                        </Link>
+                        </Link> */}
                         <Link
                             href="/leaderboard-offsetbased"
                             className={`transition-colors font-['Play'] font-bold text-[28px] ${isActive('/leaderboard-offsetbased')
