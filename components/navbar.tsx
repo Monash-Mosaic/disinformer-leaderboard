@@ -87,7 +87,7 @@ export default function Navbar() {
                 {mobileMenuOpen && (
                     <div className="lg:hidden mt-4 border-t border-[#2d4143]/10 pt-4">
                         <div className="flex flex-col space-y-2">
-                            <Link
+                            {/* <Link
                                 href="/"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className={`py-2 px-4 transition-colors font-['Play'] font-bold text-xl sm:text-2xl flex items-center gap-2 ${isActive('/') ? 'text-[#ff4805]' : 'text-[#2d4143] hover:text-[#317070]'
@@ -96,7 +96,7 @@ export default function Navbar() {
                             >
                                 {isActive('/') && <span className="text-[#4ecaca]"><ChevronRight /></span>}
                                 Home
-                            </Link>
+                            </Link> */}
                             <Link
                                 href="/leaderboard-offsetbased"
                                 onClick={() => setMobileMenuOpen(false)}
