@@ -58,7 +58,7 @@ describe("HomePage", () => {
 
     expect(
       within(main).getByRole("region", {
-        name: /Choose from a wide range of Catergories/i,
+        name: /Choose from a wide range of Categories/i,
       }),
     ).toBeInTheDocument();
   });
@@ -121,7 +121,7 @@ describe("HomeCarouselSection", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: /Choose from a wide range of Catergories/i,
+        name: /Choose from a wide range of Categories/i,
       }),
     ).toBeInTheDocument();
 
@@ -142,12 +142,12 @@ describe("HomeCarouselSection", () => {
     const user = userEvent.setup();
     render(<HomeCarouselSection />);
 
-    expect(screen.getByText(/Catergories/i)).toBeInTheDocument();
+    expect(screen.getByText(/Categories/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /next slide/i }));
 
     expect(screen.getByText(/Together/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Catergories/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Categories/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /next slide/i }));
 
@@ -183,7 +183,7 @@ describe("HomeCarouselSection", () => {
     render(<HomeCarouselSection />);
 
     const region = screen.getByRole("region", {
-      name: /Choose from a wide range of Catergories/i,
+      name: /Choose from a wide range of Categories/i,
     });
     region.focus();
 
@@ -193,7 +193,7 @@ describe("HomeCarouselSection", () => {
 
     await user.keyboard("{ArrowLeft}");
 
-    expect(screen.getByText(/Catergories/i)).toBeInTheDocument();
+    expect(screen.getByText(/Categories/i)).toBeInTheDocument();
 
     await user.keyboard("{ArrowLeft}");
 

@@ -6,7 +6,7 @@ import { useCallback, useId, useState } from "react";
 const SLIDES = [
   {
     before: "Choose from a wide range of ",
-    highlight: "Catergories",
+    highlight: "Categories",
     after: "",
     src: "/assets/carousal-1.png",
     alt: "Disinformer app screen: choose a category",
