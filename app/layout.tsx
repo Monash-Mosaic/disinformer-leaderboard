@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bungee_Shade, Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/Footer";
 import "./globals.css";
@@ -12,6 +12,18 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const pressStart2P = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-pixel",
+});
+
+const bungeeShade = Bungee_Shade({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-bungee-shade",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${bungeeShade.variable} antialiased`}
       >
         <Navbar />
         {children}

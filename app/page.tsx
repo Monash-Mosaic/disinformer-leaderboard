@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import HomePage from "@/components/home/HomePage";
 
 export default function Home() {
-  return redirect("/leaderboard-offsetbased");
+  return <HomePage />;
 }
