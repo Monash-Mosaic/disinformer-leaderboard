@@ -1,5 +1,6 @@
 import admin, { ServiceAccount } from "firebase-admin";
-import type { Firestore } from "firebase-admin/firestore";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getFirestoreDatabaseId } from "@/utils/firestore-database-id";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -34,7 +35,10 @@ export function getFirebaseAdmin(): typeof admin {
 
 export function getDb(): Firestore {
     if (!firestoreSingleton) {
-        firestoreSingleton = getFirebaseAdmin().firestore();
+        firestoreSingleton = getFirestore(
+            getFirebaseAdmin().app(),
+            getFirestoreDatabaseId()
+        );
     }
     return firestoreSingleton;
 }
