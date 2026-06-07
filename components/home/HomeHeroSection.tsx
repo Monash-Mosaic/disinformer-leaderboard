@@ -84,12 +84,12 @@ export default function HomeHeroSection() {
               Compete in the age of misinformation
             </p>
 
-            <p
+            {/* <p
               className={`${comingSoonWordmarkClass} mt-10 sm:mt-12 text-[#2d4143]`}
               style={{ textShadow: comingSoonShadow }}
             >
               DOWNLOAD
-            </p>
+            </p> */}
           </div>
 
           <div
