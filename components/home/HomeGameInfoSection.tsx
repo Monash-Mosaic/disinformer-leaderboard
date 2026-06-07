@@ -77,6 +77,10 @@ export default function HomeGameInfoSection() {
           </div>
         </div>
       </section> */}
+      <div
+        className="mx-auto mt-8 h-0.5 w-[90%] max-w-full bg-[#2d4143] shadow-[0_2px_6px_rgba(45,65,67,0.35),0_1px_3px_rgba(0,0,0,0.12)] sm:mt-10"
+        aria-hidden
+      />
     </>
   );
 }
