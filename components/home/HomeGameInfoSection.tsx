@@ -1,90 +1,82 @@
 import Image from "next/image";
+import Link from "next/link";
 
-const pixelTextClass =
-  "font-normal leading-snug tracking-normal text-[#2d4143] [font-family:var(--font-pixel)] [font-synthesis:none]";
+const bodyTextClass =
+  "font-['Play'] font-bold leading-snug tracking-tight text-[#2d4143]";
+
+const dividerClass =
+  "mx-auto h-0.5 w-[90%] max-w-full bg-[#2d4143] shadow-[0_2px_6px_rgba(45,65,67,0.35),0_1px_3px_rgba(0,0,0,0.12)]";
 
 export default function HomeGameInfoSection() {
   return (
     <>
-    <section
-      className="bg-[#FDFDF0] py-8 sm:py-12"
-      aria-labelledby="home-game-info-heading"
-    >
-      <div className="mx-auto max-w-5xl px-3 sm:px-5 lg:px-6">
-        <h2 id="home-game-info-heading" className="sr-only">
-          About the game
-        </h2>
-
-        <div className="grid w-full grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-8 lg:gap-12">
-          <div className="flex w-full min-w-0 justify-center md:justify-start">
-            <Image
-              src="/assets/octopus.png"
-              alt=""
-              width={420}
-              height={420}
-              className="h-auto w-[min(72vw,18rem)] max-w-full [image-rendering:pixelated] sm:w-[min(68vw,20rem)] md:w-full md:max-w-80 lg:max-w-88"
-              sizes="(max-width: 768px) 288px, 352px"
-            />
-          </div>
-
-          <div className="flex w-full min-w-0 flex-col items-center gap-6 sm:gap-7 md:items-center">
-            <Image
-              src="/assets/hazard.png"
-              alt=""
-              width={80}
-              height={80}
-              className="h-auto w-12 shrink-0 [image-rendering:pixelated] sm:w-14 md:w-16"
-              sizes="64px"
-            />
+      <section
+        className="bg-[#FDFDF0]"
+        aria-labelledby="home-game-info-heading"
+      >
+        <div className="mx-auto max-w-5xl px-3 py-8 sm:px-5 sm:py-10 lg:px-6">
+          <div className="grid w-full grid-cols-1 items-center md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+            <div className="flex w-full min-w-0 justify-center md:justify-start">
+              <Image
+                src="/assets/octopus.png"
+                alt=""
+                width={420}
+                height={420}
+                className="h-auto w-[min(65vw,16rem)] max-w-full [image-rendering:pixelated] sm:w-[min(60vw,18rem)] md:w-full md:max-w-72 lg:max-w-80"
+                sizes="(max-width: 768px) 256px, 320px"
+              />
+            </div>
 
             <blockquote
-              className={`${pixelTextClass} w-full text-left text-[0.58rem] leading-relaxed sm:text-[0.62rem] md:text-[0.68rem] lg:text-xs`}
+              className={`${bodyTextClass} w-full text-center text-lg sm:text-xl md:text-[1.35rem] lg:text-[1.5rem]`}
             >
-              &ldquo;Every humanitarian crisis today has two fronts:
-              <br />
-              1. The disaster
-              <br />
-              2. The misinformation surrounding the disaster&rdquo;
+              In this game, players work together
+              <br className="hidden sm:inline" />
+              <span className="sm:hidden"> </span>
+              under time limit to uncover the
+              <br className="hidden sm:inline" />
+              <span className="sm:hidden"> </span>
+              original prompt, while contending
+              <br className="hidden sm:inline" />
+              <span className="sm:hidden"> </span>
+              with a disruptive &ldquo;Disinformer&rdquo;
             </blockquote>
+          </div>
 
-            <div
-              className={`${pixelTextClass} flex w-full flex-wrap items-center justify-center text-[0.88rem] sm:flex-nowrap sm:text-[0.94rem] md:text-[1rem] lg:text-[1.08rem]`}
+          <p
+            className={`${bodyTextClass} mt-8 text-center text-base sm:mt-10 sm:text-lg md:text-xl`}
+          >
+            Learn more about misinformation{" "}
+            <Link
+              target="_blank"
+              href="https://wdr26.org/en"
+              className="text-[#e85d04] underline decoration-[#e85d04] decoration-2 underline-offset-4"
             >
-              <span className="whitespace-nowrap">A Single Phone</span>
-              <Image
-                src="/assets/mobile-phone.png"
-                alt=""
-                width={80}
-                height={120}
-                className="h-auto w-14 shrink-0 rotate-6 [image-rendering:pixelated] sm:w-16 md:w-18"
-                sizes="48px"
-              />
-              <span className="whitespace-nowrap">Multiplayer Game</span>
-            </div>
+              here
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      <section
+        className="bg-[#FDFDF0] pb-8 sm:pb-12"
+        aria-labelledby="home-game-video-heading"
+      >
+        <div className="mx-auto max-w-5xl px-3 sm:px-5 lg:px-6">
+          <h2 id="home-game-video-heading" className="sr-only">
+            Game video
+          </h2>
+          <div className="relative mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-lg border-2 border-[#2d4143]">
+            <iframe
+              src="https://www.youtube.com/embed/xmk0j-HdgwY"
+              title="Disinformer game video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full"
+            />
           </div>
         </div>
-      </div>
-    </section>
-
-    <section
-      className="bg-[#FDFDF0] pb-8 sm:pb-12"
-      aria-labelledby="home-game-video-heading"
-    >
-      <div className="mx-auto max-w-5xl px-3 sm:px-5 lg:px-6">
-        <h2 id="home-game-video-heading" className="sr-only">
-          Game video
-        </h2>
-        <div className="relative aspect-video w-3/4 mx-auto overflow-hidden rounded-lg border-2 border-[#2d4143]">
-          <iframe
-            src="https://youtu.be/xmk0j-HdgwY?si=MqI9YIlD7-0EsPyu"
-            title="Disinformer game video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="absolute inset-0 h-full w-full"
-          />
-        </div>
-      </div>
-    </section>
-  </>
+      </section>
+    </>
   );
 }
