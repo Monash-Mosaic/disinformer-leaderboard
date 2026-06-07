@@ -15,12 +15,12 @@ const NAV_ITEMS = [
     label: "Leaderboard",
     isActive: (pathname: string) => pathname.startsWith("/leaderboard-offsetbased"),
   },
-  {
-    href: "#",
-    label: "Report Bugs",
-    isActive: () => false,
-    external: true,
-  },
+  // {
+  //   href: "#",
+  //   label: "Report Bugs",
+  //   isActive: () => false,
+  //   external: true,
+  // },
 ] as const;
 
 function NavLine() {
