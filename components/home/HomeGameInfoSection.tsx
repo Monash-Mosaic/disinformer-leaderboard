@@ -58,7 +58,7 @@ export default function HomeGameInfoSection() {
         </div>
       </section>
 
-      <section
+      {/* <section
         className="bg-[#FDFDF0] pb-8 sm:pb-12"
         aria-labelledby="home-game-video-heading"
       >
@@ -76,7 +76,7 @@ export default function HomeGameInfoSection() {
             />
           </div>
         </div>
-      </section>
+      </section> */}
     </>
   );
 }
