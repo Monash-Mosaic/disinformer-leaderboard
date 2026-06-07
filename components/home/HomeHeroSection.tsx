@@ -88,7 +88,7 @@ export default function HomeHeroSection() {
               className={`${comingSoonWordmarkClass} mt-10 sm:mt-12 text-[#2d4143]`}
               style={{ textShadow: comingSoonShadow }}
             >
-              COMING SOON
+              DOWNLOAD
             </p>
           </div>
 
