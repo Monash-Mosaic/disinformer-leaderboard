@@ -3,6 +3,8 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import HomePage from "@/components/home/HomePage";
 import HomeHeroSection from "@/components/home/HomeHeroSection";
+import HomeGameInfoSection from "@/components/home/HomeGameInfoSection";
+import HomeGameRoleSection from "@/components/home/HomeGameRoleSection";
 import HomeCarouselSection from "@/components/home/HomeCarouselSection";
 
 vi.mock("next/image", () => ({
@@ -41,12 +43,26 @@ vi.mock("next/image", () => ({
   },
 }));
 
+const ROLE_ICON_SRCS = [
+  "/assets/person-1.png",
+  "/assets/person-2.png",
+  "/assets/octopus.png",
+  "/assets/person-3.png",
+  "/assets/person4.png",
+  "/assets/person-5.png",
+] as const;
+
+function expectCarouselTagline(container: HTMLElement = document.body) {
+  const tagline = within(container).getByText(/alone Triumph/i).closest("p");
+  expect(tagline).toHaveTextContent("May the Truth alone Triumph");
+}
+
 describe("HomePage", () => {
   beforeEach(() => {
     cleanup();
   });
 
-  it("renders hero and carousel inside main landmark", () => {
+  it("renders all home sections inside the main landmark", () => {
     render(<HomePage />);
 
     const main = screen.getByRole("main");
@@ -57,10 +73,23 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
 
     expect(
+      within(main).getByText(/In this game, players work together/i),
+    ).toBeInTheDocument();
+
+    expect(
+      within(main).getByRole("heading", {
+        level: 2,
+        name: /3 Roles: Disinformer, Misinformed and Netizen/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
       within(main).getByRole("region", {
         name: /Choose from a wide range of Categories/i,
       }),
     ).toBeInTheDocument();
+
+    expectCarouselTagline(main);
   });
 });
 
@@ -69,7 +98,7 @@ describe("HomeHeroSection", () => {
     cleanup();
   });
 
-  it("renders title, tagline, coming soon, and decorative assets", () => {
+  it("renders title, tagline, download call-to-action, and decorative assets", () => {
     render(<HomeHeroSection />);
 
     expect(
@@ -78,7 +107,7 @@ describe("HomeHeroSection", () => {
     expect(
       screen.getByText("Compete in the age of misinformation"),
     ).toBeInTheDocument();
-    expect(screen.getByText("COMING SOON")).toBeInTheDocument();
+    expect(screen.getByText("DOWNLOAD")).toBeInTheDocument();
 
     expect(screen.getByTestId("img--assets-rabbit-png")).toHaveAttribute(
       "src",
@@ -110,12 +139,65 @@ describe("HomeHeroSection", () => {
   });
 });
 
+describe("HomeGameInfoSection", () => {
+  beforeEach(() => {
+    cleanup();
+  });
+
+  it("renders the game description, octopus asset, and misinformation link", () => {
+    render(<HomeGameInfoSection />);
+
+    expect(
+      screen.getByText(/In this game, players work together/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("blockquote")).toHaveTextContent(
+      /with a disruptive.*Disinformer/i,
+    );
+
+    expect(screen.getByTestId("img--assets-octopus-png")).toHaveAttribute(
+      "src",
+      "/assets/octopus.png",
+    );
+
+    expect(
+      screen.getByText(/Learn more about misinformation/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "here" })).toHaveAttribute(
+      "href",
+      "https://wdr26.org/en",
+    );
+  });
+});
+
+describe("HomeGameRoleSection", () => {
+  beforeEach(() => {
+    cleanup();
+  });
+
+  it("renders the roles heading and all role icons in order", () => {
+    render(<HomeGameRoleSection />);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: /3 Roles: Disinformer, Misinformed and Netizen/i,
+      }),
+    ).toBeInTheDocument();
+
+    ROLE_ICON_SRCS.forEach((src) => {
+      expect(
+        screen.getByTestId(`img-${src.replace(/\W+/g, "-")}`),
+      ).toHaveAttribute("src", src);
+    });
+  });
+});
+
 describe("HomeCarouselSection", () => {
   beforeEach(() => {
     cleanup();
   });
 
-  it("shows first slide copy and all slide images", () => {
+  it("shows first slide copy, all slide images, and the tagline", () => {
     render(<HomeCarouselSection />);
 
     expect(
@@ -136,6 +218,8 @@ describe("HomeCarouselSection", () => {
     expect(
       screen.getByRole("img", { name: /disinformer role/i }),
     ).toBeInTheDocument();
+
+    expectCarouselTagline();
   });
 
   it("advances heading copy when Next is used", async () => {
@@ -151,7 +235,12 @@ describe("HomeCarouselSection", () => {
 
     await user.click(screen.getByRole("button", { name: /next slide/i }));
 
-    expect(screen.getByText(/Disinformer/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: /Persuade others from the Truth as Disinformer/i,
+      }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Together/i)).not.toBeInTheDocument();
   });
 
@@ -161,7 +250,12 @@ describe("HomeCarouselSection", () => {
 
     await user.click(screen.getByRole("button", { name: /previous slide/i }));
 
-    expect(screen.getByText(/Disinformer/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: /Persuade others from the Truth as Disinformer/i,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("jumps to a slide when an indicator is chosen", async () => {
@@ -173,7 +267,7 @@ describe("HomeCarouselSection", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: /Persuade others from the answer as Disinformer/i,
+        name: /Persuade others from the Truth as Disinformer/i,
       }),
     ).toBeInTheDocument();
   });
@@ -200,7 +294,7 @@ describe("HomeCarouselSection", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: /Persuade others from the answer as Disinformer/i,
+        name: /Persuade others from the Truth as Disinformer/i,
       }),
     ).toBeInTheDocument();
   });
