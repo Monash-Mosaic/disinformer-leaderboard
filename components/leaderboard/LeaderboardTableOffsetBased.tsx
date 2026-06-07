@@ -1,10 +1,10 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { RankingCriteria } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
-import { fetchLeaderboardAction } from "@/app/leaderboard-offsetbased/actions";
+import { getPaginatedLeaderboard } from "@/services/leaderboard-offset-service";
 import { subscribeToLeaderboardChanges } from "@/services/leaderboard-offset-realtime-service";
 import LeaderboardSearchBar from "./LeaderboardSearchBar";
 import LeaderboardToggleButton from "./LeaderboardToggleButton";
@@ -16,7 +16,6 @@ import LeaderboardSkeleton from "./LeaderboardSkeleton";
  * These are passed from the Server Component and represent URL state
  */
 interface LeaderboardTableOffsetBasedProps {
-    dataPromise: Promise<LeaderboardPageResult>;  // Server-fetched data promise
     initialPage: number;           // Starting page number from URL
     initialMode: RankingCriteria;  // Initial ranking mode from URL
     initialSearch: string;         // Initial search term from URL
@@ -30,10 +29,9 @@ interface LeaderboardTableOffsetBasedProps {
  * Combines server-side initial data fetching with client-side real-time subscriptions.
  *
  * Architecture:
- * - Server fetches initial data as a promise (server-side rendering benefits)
- * - Client component uses React's "use" hook to resolve the promise
+ * - Client fetches all pages via Firebase client SDK (security rules enforced)
  * - Real-time updates via Firebase client SDK listener
- * - When leaderboard changes, re-fetches current page using server action
+ * - When leaderboard changes, re-fetches the current page in the browser
  * - URL state synchronized for shareable links
  *
  * Key Features:
@@ -51,20 +49,16 @@ interface LeaderboardTableOffsetBasedProps {
  * + Real-time updates with server-side consistency
  */
 export default function LeaderboardTableOffsetBased({
-    dataPromise,
     initialPage,
     initialMode,
     initialSearch,
     enableRealtime = true,
 }: LeaderboardTableOffsetBasedProps) {
-    // Use the "use" hook to resolve the server-fetched data promise
-    const initialData = use(dataPromise);
-
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
     // Component state
-    const [data, setData] = useState<LeaderboardPageResult>(initialData);
+    const [data, setData] = useState<LeaderboardPageResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Filter/navigation state
@@ -72,7 +66,7 @@ export default function LeaderboardTableOffsetBased({
     const [currentPage, setCurrentPage] = useState(initialPage);
     const [inputValue, setInputValue] = useState(initialSearch);
     const [searchTerm, setSearchTerm] = useState(initialSearch);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Refs to store current values for real-time subscription
     // This prevents stale closure issues where the subscription uses old values
@@ -125,24 +119,25 @@ export default function LeaderboardTableOffsetBased({
     }, [mode, searchTerm, enableRealtime]);
 
     /**
-     * Fetches leaderboard data on the client side using Server Action
-     * Used for subsequent navigations after initial server fetch
+     * Fetches leaderboard data in the browser via the Firebase client SDK.
      */
-    const fetchLeaderboardData = async (page: number, rankMode: RankingCriteria, search: string, silent = false) => {
+    const fetchLeaderboardData = useCallback(async (
+        page: number,
+        rankMode: RankingCriteria,
+        search: string,
+        silent = false
+    ) => {
         if (!silent) {
             setIsLoading(true);
         }
         setError(null);
 
         try {
-            const result = await fetchLeaderboardAction(page, rankMode, search);
+            const result = await getPaginatedLeaderboard(page, rankMode, search);
             setData(result);
 
-            // Sync component state with server response (important for real-time updates)
-            // If the server adjusted the page (e.g., due to total pages change), update local state
-            if (result.currentPage !== currentPage) {
+            if (result.currentPage !== page) {
                 setCurrentPage(result.currentPage);
-                // Update URL to reflect the corrected page
                 updateURL(result.currentPage, rankMode, search);
             }
         } catch (err) {
@@ -152,7 +147,16 @@ export default function LeaderboardTableOffsetBased({
                 setIsLoading(false);
             }
         }
-    };
+    }, []);
+
+    // Load data from URL params on mount and when the user lands via a shared link
+    useEffect(() => {
+        setMode(initialMode);
+        setCurrentPage(initialPage);
+        setInputValue(initialSearch);
+        setSearchTerm(initialSearch);
+        fetchLeaderboardData(initialPage, initialMode, initialSearch);
+    }, [initialPage, initialMode, initialSearch, fetchLeaderboardData]);
 
     /**
      * Updates URL with new state parameters
