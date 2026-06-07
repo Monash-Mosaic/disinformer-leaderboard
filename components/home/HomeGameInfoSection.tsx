@@ -48,7 +48,7 @@ export default function HomeGameInfoSection() {
             </blockquote>
 
             <div
-              className={`${pixelTextClass} flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[0.88rem] sm:flex-nowrap sm:gap-x-5 sm:gap-y-0 sm:text-[0.94rem] md:text-[1rem] lg:gap-x-6 lg:text-[1.08rem]`}
+              className={`${pixelTextClass} flex w-full flex-wrap items-center justify-center text-[0.88rem] sm:flex-nowrap sm:text-[0.94rem] md:text-[1rem] lg:text-[1.08rem]`}
             >
               <span className="whitespace-nowrap">A Single Phone</span>
               <Image
