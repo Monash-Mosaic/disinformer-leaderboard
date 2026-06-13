@@ -1,14 +1,23 @@
-import type { CollectionReference, Query } from "firebase-admin/firestore";
-import { getDb } from "@/utils/firebase.admin";
+import {
+    query,
+    orderBy,
+    where,
+    limit,
+    getDocs,
+    getCountFromServer,
+    Query,
+    DocumentData,
+} from "firebase/firestore";
+import { playersCollection } from "@/utils/firebase.client";
 import { RankingCriteria, Player } from "@/types/leaderboard";
 import { LeaderboardPageResult } from "@/types/pagination";
 
 /**
  * OFFSET-BASED PAGINATION SERVICE
- * 
+ *
  * This service implements offset-based pagination for the Firestore leaderboard.
  * Unlike cursor-based pagination, this approach uses limit + offset to fetch pages.
- * 
+ *
  */
 
 const PAGE_SIZE = 10;
@@ -31,7 +40,6 @@ function searchTermNormalize(term: string): string {
 }
 
 function buildSortedPlayersQuery(
-    playersCollection: CollectionReference,
     mode: RankingCriteria,
     searchTerm: string
 ): Query {
@@ -39,52 +47,53 @@ function buildSortedPlayersQuery(
         ? 'totalNetizenPoints'
         : 'totalDisinformerPoints';
 
-    let baseQuery: Query = playersCollection;
+    let q: Query = playersCollection;
 
     const searchTermNormalized = searchTerm ? searchTermNormalize(searchTerm) : undefined;
 
     if (searchTermNormalized) {
-        baseQuery = baseQuery
-            .where('username_lowercase', '>=', searchTermNormalized)
-            .where('username_lowercase', '<=', searchTermNormalized + '\uf8ff');
+        q = query(
+            q,
+            where('username_lowercase', '>=', searchTermNormalized),
+            where('username_lowercase', '<=', searchTermNormalized + '\uf8ff')
+        );
     }
 
-    return baseQuery
-        .orderBy(sortField, 'desc')
-        .orderBy('totalGamesPlayed', 'asc')
-        .orderBy('username_lowercase', 'asc');
+    return query(
+        q,
+        orderBy(sortField, 'desc'),
+        orderBy('totalGamesPlayed', 'asc'),
+        orderBy('username_lowercase', 'asc')
+    );
 }
 
-const LEADERBOARD_PAGE_FIELD_MASK = [
-    'username',
-    'totalGamesPlayed',
-    'totalDisinformerPoints',
-    'totalNetizenPoints',
-    'username_lowercase',
-    'society',
-    'branch',
-    'email',
-    'createdAt',
-    'lastGamePlayedAt',
-    'avatar',
-    'surveysCompleted',
-] as const;
+function serializePlayer(doc: DocumentData): Player {
+    const data = doc.data();
+    return {
+        ...data,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
+        lastGamePlayedAt: data.lastGamePlayedAt?.toDate?.()?.toISOString() ?? null,
+        totalDisinformerPoints: data.totalDisinformerPoints ?? 0,
+        totalNetizenPoints: data.totalNetizenPoints ?? 0,
+        id: doc.id,
+    } as Player;
+}
 
 /**
  * Fetches a single page of leaderboard data using offset-based pagination
- * 
+ *
  * How it works:
  * 1. Query all matching documents with ordering
  * 2. Skip (offset) the first N * pageSize documents
  * 3. Limit results to PAGE_SIZE
  * 4. Calculate pagination metadata
- * 
+ *
  * Firestore Reads:
  * - Always charges for reading all documents up to current page + page size
  * - Page 1: reads ~10 docs
  * - Page 10: reads ~100 docs
  * - Page 100: reads ~1000 docs (expensive!)
- * 
+ *
  * @param page - Page number (1-based)
  * @param mode - Ranking mode (Disinformer or Netizen)
  * @param searchTerm - Optional search filter (username prefix matching)
@@ -99,10 +108,9 @@ export async function getPaginatedLeaderboard(
         // Validate and normalize inputs
         const normalizedPage = Math.max(1, Math.floor(page || 1));
 
-        const playersCollection = getDb().collection('players');
-        const sortedQuery = buildSortedPlayersQuery(playersCollection, mode, searchTerm);
+        const sortedQuery = buildSortedPlayersQuery(mode, searchTerm);
 
-        const countSnapshot = await sortedQuery.count().get();
+        const countSnapshot = await getCountFromServer(sortedQuery);
         const totalDocuments = countSnapshot.data().count;
 
         // Log the count query read (count queries also count as reads)
@@ -120,32 +128,20 @@ export async function getPaginatedLeaderboard(
         // Calculate offset (skip)
         const pageOffset = (validPage - 1) * PAGE_SIZE;
 
+        // Client SDK has no offset(); fetch through the page boundary and slice.
         const snapshot =
             totalDocuments === 0
                 ? null
-                : await sortedQuery
-                    .select(...LEADERBOARD_PAGE_FIELD_MASK)
-                    .offset(pageOffset)
-                    .limit(PAGE_SIZE)
-                    .get();
+                : await getDocs(
+                    query(sortedQuery, limit(pageOffset + PAGE_SIZE))
+                );
 
-        // Log the data fetch reads
+        const pageDocs = snapshot?.docs.slice(pageOffset) ?? [];
+
+        // Log the data fetch reads (billed for all docs through the page boundary)
         logFirestoreReads('getPageData', snapshot?.docs.length ?? 0);
 
-        // Transform documents into Player objects
-        const players = (snapshot?.docs ?? []).map((doc: any) => {
-            const data = doc.data();
-
-            return {
-                ...data,
-                // Convert Firestore Timestamps to ISO strings for client serialization
-                createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : null,
-                lastGamePlayedAt: data.lastGamePlayedAt ? data.lastGamePlayedAt.toDate().toISOString() : null,
-                totalDisinformerPoints: data.totalDisinformerPoints ?? 0,
-                totalNetizenPoints: data.totalNetizenPoints ?? 0,
-                id: doc.id,
-            } as Player;
-        });
+        const players = pageDocs.map(serializePlayer);
 
         return {
             players,
@@ -165,14 +161,14 @@ export async function getPaginatedLeaderboard(
 
 /**
  * Gets the total count of documents matching the given criteria
- * 
+ *
  * This uses the efficient count() method which doesn't read the actual document contents.
  * Much more cost-effective than traditional count queries.
- * 
+ *
  * Use cases:
  * - Calculate total pages on initial load
  * - Verify search results count
- * 
+ *
  * @param mode - Ranking mode
  * @param searchTerm - Optional search filter
  * @returns Total number of matching documents
@@ -182,10 +178,9 @@ export async function getTotalLeaderboardCount(
     searchTerm: string = ''
 ): Promise<number> {
     try {
-        const playersCollection = getDb().collection('players');
-        const sortedQuery = buildSortedPlayersQuery(playersCollection, mode, searchTerm);
+        const sortedQuery = buildSortedPlayersQuery(mode, searchTerm);
 
-        const snapshot = await sortedQuery.count().get();
+        const snapshot = await getCountFromServer(sortedQuery);
         return snapshot.data().count;
     } catch (error) {
         console.error('[Offset Service] Error getting total count:', error);

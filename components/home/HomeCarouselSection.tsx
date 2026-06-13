@@ -19,7 +19,7 @@ const SLIDES = [
     alt: "Disinformer app screen: collaborate on the clue",
   },
   {
-    before: "Persuade others from the answer as ",
+    before: "Persuade others from the Truth as ",
     highlight: "Disinformer",
     after: "",
     src: "/assets/carousal-3.png",
@@ -33,6 +33,12 @@ const SLIDE_COUNT = SLIDES.length;
 const carouselViewportClass = "w-[min(88vw,300px)]";
 
 const SLIDE_IMG = { width: 300, height: 636 } as const;
+
+const slideHeadingClass =
+  "mx-auto block max-w-[min(100%,42rem)] text-center font-['Play'] text-lg font-bold leading-snug tracking-tight text-[#2d4143] sm:text-xl md:text-2xl";
+
+const taglineClass =
+  "mt-5 text-center font-['Play'] text-base font-bold leading-snug tracking-tight text-[#2d4143] sm:mt-6 sm:text-lg md:text-xl [text-shadow:0_1px_2px_rgba(45,65,67,0.08),0_2px_8px_rgba(45,65,67,0.06)]";
 
 export default function HomeCarouselSection() {
   const labelId = useId();
@@ -68,7 +74,7 @@ export default function HomeCarouselSection() {
       <div className="mx-auto max-w-5xl px-3 sm:px-5 lg:px-6">
         <h2
           id={labelId}
-          className="mx-auto block max-w-[min(100%,36rem)] text-center font-normal leading-snug tracking-normal text-[#2d4143] [font-family:var(--font-pixel)] [font-synthesis:none] text-[0.62rem] sm:text-[0.68rem] md:text-xs lg:text-sm scale-x-[0.94] sm:scale-x-[0.95]"
+          className={slideHeadingClass}
           aria-live="polite"
         >
           {slide.before}
@@ -78,7 +84,7 @@ export default function HomeCarouselSection() {
           {slide.after}
         </h2>
 
-        <div className="mt-4 flex flex-col items-center sm:mt-5">
+        <div className="mt-5 flex flex-col items-center sm:mt-6 md:mt-8">
           <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
             <button
               type="button"
@@ -162,6 +168,10 @@ export default function HomeCarouselSection() {
               />
             ))}
           </div>
+
+          <p className={taglineClass}>
+            May the <span className="text-[#317070]">Truth</span> alone Triumph
+          </p>
         </div>
       </div>
     </section>

@@ -2,11 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getPaginatedLeaderboard } from "@/services/leaderboard-offset-service";
 import { RankingCriteria } from "@/types/leaderboard";
 
-vi.mock("@/utils/firebase.admin", () => ({
-    getDb: vi.fn(),
+vi.mock("@/utils/firebase.client", () => ({
+    playersCollection: { id: "players" },
 }));
 
-import { getDb } from "@/utils/firebase.admin";
+vi.mock("firebase/firestore", () => ({
+    query: vi.fn((base, ...constraints) => ({ base, constraints })),
+    orderBy: vi.fn((field, direction) => ({ type: "orderBy", field, direction })),
+    where: vi.fn((field, op, value) => ({ type: "where", field, op, value })),
+    limit: vi.fn((n) => ({ type: "limit", n })),
+    getDocs: vi.fn(),
+    getCountFromServer: vi.fn(),
+}));
+
+import { getDocs, getCountFromServer, where, orderBy, limit } from "firebase/firestore";
 
 function createDoc(id: string, data: Record<string, unknown>) {
     return {
@@ -15,47 +24,14 @@ function createDoc(id: string, data: Record<string, unknown>) {
     };
 }
 
-function createFirestoreQueryMocks(totalCount: number, pageDocs: ReturnType<typeof createDoc>[]) {
-    const countGet = vi.fn().mockResolvedValue({
-        data: () => ({ count: totalCount }),
-    });
-
-    const pageGet = vi.fn().mockResolvedValue({
-        docs: pageDocs,
-    });
-
-    const query = {
-        where: vi.fn(function (this: typeof query) {
-            return this;
-        }),
-        orderBy: vi.fn(function (this: typeof query) {
-            return this;
-        }),
-        count: vi.fn(() => ({ get: countGet })),
-        select: vi.fn(function (this: typeof query) {
-            return this;
-        }),
-        offset: vi.fn(function (this: typeof query) {
-            return this;
-        }),
-        limit: vi.fn(function (this: typeof query) {
-            return this;
-        }),
-        get: pageGet,
-    };
-
-    return { query, countGet, pageGet };
-}
-
 describe("getPaginatedLeaderboard", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it("returns empty page when there are no players", async () => {
-        const { query, countGet, pageGet } = createFirestoreQueryMocks(0, []);
-        vi.mocked(getDb).mockReturnValue({
-            collection: vi.fn(() => query),
+        vi.mocked(getCountFromServer).mockResolvedValue({
+            data: () => ({ count: 0 }),
         } as never);
 
         const result = await getPaginatedLeaderboard(1, RankingCriteria.Disinformer, "");
@@ -65,8 +41,8 @@ describe("getPaginatedLeaderboard", () => {
         expect(result.currentPage).toBe(1);
         expect(result.hasNextPage).toBe(false);
         expect(result.hasPrevPage).toBe(false);
-        expect(countGet).toHaveBeenCalledTimes(1);
-        expect(pageGet).not.toHaveBeenCalled();
+        expect(getCountFromServer).toHaveBeenCalledTimes(1);
+        expect(getDocs).not.toHaveBeenCalled();
     });
 
     it("maps documents to players with ids and normalized points", async () => {
@@ -83,11 +59,11 @@ describe("getPaginatedLeaderboard", () => {
             lastGamePlayedAt: null,
         };
         const docs = [createDoc("player-1", docData)];
-        const { query, pageGet } = createFirestoreQueryMocks(1, docs);
 
-        vi.mocked(getDb).mockReturnValue({
-            collection: vi.fn(() => query),
+        vi.mocked(getCountFromServer).mockResolvedValue({
+            data: () => ({ count: 1 }),
         } as never);
+        vi.mocked(getDocs).mockResolvedValue({ docs } as never);
 
         const result = await getPaginatedLeaderboard(1, RankingCriteria.Disinformer, "");
 
@@ -106,21 +82,20 @@ describe("getPaginatedLeaderboard", () => {
         expect(result.currentPage).toBe(1);
         expect(result.hasNextPage).toBe(false);
         expect(result.hasPrevPage).toBe(false);
-        expect(pageGet).toHaveBeenCalledTimes(1);
+        expect(getDocs).toHaveBeenCalledTimes(1);
     });
 
     it("applies search filters on the query chain", async () => {
-        const { query } = createFirestoreQueryMocks(0, []);
-        vi.mocked(getDb).mockReturnValue({
-            collection: vi.fn(() => query),
+        vi.mocked(getCountFromServer).mockResolvedValue({
+            data: () => ({ count: 0 }),
         } as never);
 
         await getPaginatedLeaderboard(1, RankingCriteria.Netizen, "  Ali  ");
 
-        expect(query.where).toHaveBeenCalled();
-        const calls = query.where.mock.calls as unknown[][];
-        expect(calls.some((c) => c[0] === "username_lowercase")).toBe(true);
-        expect(query.orderBy).toHaveBeenCalledWith("totalNetizenPoints", "desc");
+        expect(where).toHaveBeenCalled();
+        const whereCalls = vi.mocked(where).mock.calls;
+        expect(whereCalls.some((c) => c[0] === "username_lowercase")).toBe(true);
+        expect(orderBy).toHaveBeenCalledWith("totalNetizenPoints", "desc");
     });
 
     it("clamps requested page to total pages", async () => {
@@ -136,16 +111,17 @@ describe("getPaginatedLeaderboard", () => {
                 username_lowercase: `u${i}`,
             })
         );
-        const { query, pageGet } = createFirestoreQueryMocks(10, docs);
-        vi.mocked(getDb).mockReturnValue({
-            collection: vi.fn(() => query),
+
+        vi.mocked(getCountFromServer).mockResolvedValue({
+            data: () => ({ count: 10 }),
         } as never);
+        vi.mocked(getDocs).mockResolvedValue({ docs } as never);
 
         const result = await getPaginatedLeaderboard(99, RankingCriteria.Disinformer, "");
 
         expect(result.currentPage).toBe(1);
         expect(result.totalPages).toBe(1);
-        expect(query.offset).toHaveBeenCalledWith(0);
-        expect(pageGet).toHaveBeenCalled();
+        expect(limit).toHaveBeenCalledWith(10);
+        expect(getDocs).toHaveBeenCalled();
     });
 });
