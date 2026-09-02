@@ -62,6 +62,14 @@ export default function Footer() {
                         </a>
                     </div>
                 </div>
+                <div className="mt-6 border-t border-[#ffffef]/30 pt-5 text-center sm:text-left">
+                    <Link
+                        href="/privacy-policy"
+                        className="font-['Play'] font-bold text-[#ffffef] underline decoration-2 underline-offset-4 hover:text-[#ffb193] focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ffffef]"
+                    >
+                        Privacy Policy
+                    </Link>
+                </div>
             </div>
         </footer>
     );
